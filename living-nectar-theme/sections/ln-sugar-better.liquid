@@ -1,0 +1,42 @@
+<section class="ln-sugar-better-section" style="position: relative; overflow: hidden; margin: 0; padding: 0; min-height: 450px; background-color: #1a3329; background-image: url('{{ 'sugar-section-bg.png' | asset_url }}'); background-size: cover; background-position: center; background-repeat: no-repeat;">
+  
+  <!-- Text overlay -->
+  <div style="position: relative; z-index: 1; display: flex; flex-direction: column; justify-content: space-between; min-height: 450px; padding: 60px 80px;">
+    <!-- Main text - top left -->
+    <div style="max-width: 450px;">
+      <h2 style="font-family: var(--font-heading, sans-serif); font-size: 2rem; font-weight: 800; color: #f5f1eb; margin-bottom: 20px; text-transform: uppercase; line-height: 1.1;">{{ section.settings.heading }}</h2>
+      <p style="font-size: 0.95rem; line-height: 1.7; color: #f5f1eb; margin-bottom: 0;">{{ section.settings.text }}</p>
+    </div>
+    <!-- Flavor notes - bottom right -->
+    {% if section.settings.flavor_notes != blank %}
+      <p style="font-style: italic; color: #f5f1eb; opacity: 0.9; font-size: 1.1rem; margin: 0; text-align: right; align-self: flex-end;">{{ section.settings.flavor_notes }}</p>
+    {% endif %}
+  </div>
+</section>
+
+<style>
+  @media screen and (max-width: 749px) {
+    .ln-sugar-better-section {
+      min-height: 400px !important;
+    }
+    .ln-sugar-better-section > div:last-child {
+      padding: 40px 24px !important;
+    }
+    .ln-sugar-better-section h2 {
+      font-size: 1.6rem !important;
+    }
+  }
+</style>
+
+{% schema %}
+{
+  "name": "LN Sugar Better",
+  "settings": [
+    { "type": "text", "id": "asset_filename", "label": "Image Asset Filename (legacy)" },
+    { "type": "text", "id": "heading", "label": "Heading", "default": "SUGAR JUST GOT BETTER" },
+    { "type": "textarea", "id": "text", "label": "Text" },
+    { "type": "text", "id": "flavor_notes", "label": "Flavor Notes" }
+  ],
+  "presets": [{ "name": "LN Sugar Better" }]
+}
+{% endschema %}
