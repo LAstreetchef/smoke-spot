@@ -79,6 +79,7 @@ export function TipButton({
       {/* Main tip button */}
       <button
         onClick={() => {
+          console.log('Tip button clicked', { isLoggedIn, isOwnPost, currentUserId, postUserId });
           if (!isLoggedIn) {
             setError('Log in to tip');
             setTimeout(() => setError(null), 3000);
@@ -89,7 +90,7 @@ export function TipButton({
             setTimeout(() => setError(null), 3000);
             return;
           }
-          setShowPresets(!showPresets);
+          setShowPresets(true);
         }}
         className="flex items-center gap-1 px-2 py-1 rounded-lg transition-all duration-200"
         style={{
@@ -161,29 +162,28 @@ export function TipButton({
         </>
       )}
 
-      {/* Error toast */}
+      {/* Error toast - fixed position */}
       {error && (
         <div
-          className="absolute bottom-full left-0 mb-2 px-3 py-1.5 rounded-lg text-xs whitespace-nowrap z-50"
+          className="fixed top-20 left-1/2 -translate-x-1/2 px-4 py-2 rounded-lg text-sm z-[100]"
           style={{
-            background: 'rgba(239,68,68,0.15)',
-            color: '#f87171',
-            border: '1px solid rgba(239,68,68,0.2)',
+            background: 'rgba(239,68,68,0.95)',
+            color: '#fff',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
           }}
         >
           {error}
         </div>
       )}
 
-      {/* Success toast */}
+      {/* Success toast - fixed position */}
       {success && (
         <div
-          className="absolute bottom-full left-0 mb-2 px-3 py-1.5 rounded-lg text-xs whitespace-nowrap z-50"
+          className="fixed top-20 left-1/2 -translate-x-1/2 px-4 py-2 rounded-lg text-sm z-[100]"
           style={{
-            background: 'rgba(251,191,36,0.15)',
-            color: '#fbbf24',
-            border: '1px solid rgba(251,191,36,0.2)',
-            animation: 'fadeSlideUp 0.3s ease-out',
+            background: 'rgba(34,197,94,0.95)',
+            color: '#fff',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
           }}
         >
           🔥 Lit!
