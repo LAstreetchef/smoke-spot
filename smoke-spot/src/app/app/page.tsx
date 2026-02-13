@@ -204,10 +204,9 @@ export default function SplitScreenPage() {
         >
           {lat && lng && (
             <Map
-              center={{ lat, lng }}
+              initialCenter={{ lat, lng }}
               spots={spots}
               onBoundsChange={() => {}}
-              className="flex-1"
             />
           )}
         </div>
