@@ -120,11 +120,10 @@ export default function SpotFeedPage() {
         {/* Post Composer */}
         <div className="mb-4">
           <PostComposer
-            latitude={spot.latitude}
-            longitude={spot.longitude}
+            lat={spot.latitude}
+            lng={spot.longitude}
             spotId={spotId}
-            spotName={spot.name}
-            onPostCreated={handlePostCreated}
+            onPost={loadFeed}
           />
         </div>
 
