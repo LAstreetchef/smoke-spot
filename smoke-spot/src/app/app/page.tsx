@@ -28,7 +28,7 @@ export default function GlobalFeedPage() {
         lat,
         lng,
         radius_miles: radius,
-        sort_by: sort,
+        sort,
       });
       setPosts(data);
     } catch (err) {
