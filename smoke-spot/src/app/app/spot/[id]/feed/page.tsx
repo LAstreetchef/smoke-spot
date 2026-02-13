@@ -58,8 +58,8 @@ export default function SpotFeedPage() {
     setLoading(true);
     try {
       const data = await fetchSpotFeed({
-        spotId,
-        sortBy,
+        spot_id: spotId,
+        sort: sortBy,
       });
       setPosts(data);
     } catch (err) {
