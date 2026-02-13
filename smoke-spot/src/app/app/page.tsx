@@ -171,6 +171,19 @@ export default function SplitScreenPage() {
             onBoundsChange={() => {}}
           />
         )}
+        {/* Add Spot Button */}
+        <a
+          href="/app/spot/new"
+          className="absolute top-3 right-3 z-10 bg-emerald-600 text-white px-3 py-2 rounded-full text-sm font-medium shadow-lg hover:bg-emerald-500 transition flex items-center gap-1"
+        >
+          ➕ Add Spot
+        </a>
+        {/* Spot count indicator */}
+        {spots.length > 0 && (
+          <div className="absolute top-3 left-3 z-10 bg-zinc-900/80 text-white px-2 py-1 rounded text-xs">
+            📍 {spots.length} spots nearby
+          </div>
+        )}
       </div>
 
       {/* Feed Panel - bottom 1/3 on mobile, right 1/3 on desktop */}
