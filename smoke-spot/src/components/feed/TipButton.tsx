@@ -1,11 +1,9 @@
+// components/feed/TipButton.tsx
 'use client';
 
 import { useState } from 'react';
-import { loadStripe } from '@stripe/stripe-js';
-import { TIP_PRESETS, formatCentsShort } from '@/types/tipping';
-import { createTipIntent } from '@/lib/tipping';
-
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+import { createTipIntent, formatCents } from '@/lib/tipping';
+import { TIP_PRESETS, type TipPreset } from '@/types/tipping';
 
 interface TipButtonProps {
   postId: string;
@@ -25,23 +23,29 @@ export function TipButton({
   onTipSuccess,
 }: TipButtonProps) {
   const [showPresets, setShowPresets] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [processing, setProcessing] = useState(false);
+  const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [displayTotal, setDisplayTotal] = useState(tipTotalCents);
+  const [displayCount, setDisplayCount] = useState(tipCount);
 
   const isOwnPost = currentUserId === postUserId;
-  const canTip = currentUserId && !isOwnPost;
+  const isLoggedIn = !!currentUserId;
 
-  const handleTip = async (amountCents: number) => {
-    if (!canTip) return;
-    
-    setLoading(true);
+  async function handleTip(amountCents: TipPreset) {
+    if (!isLoggedIn || isOwnPost || processing) return;
+    setProcessing(true);
     setError(null);
 
     try {
-      const stripe = await stripePromise;
-      if (!stripe) throw new Error('Stripe not loaded');
-
       const { client_secret } = await createTipIntent(postId, amountCents);
+
+      // Load Stripe.js and confirm payment
+      // This assumes @stripe/stripe-js is installed
+      const { loadStripe } = await import('@stripe/stripe-js');
+      const stripe = await loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+
+      if (!stripe) throw new Error('Stripe failed to load');
 
       const { error: stripeError } = await stripe.confirmPayment({
         clientSecret: client_secret,
@@ -52,71 +56,120 @@ export function TipButton({
       });
 
       if (stripeError) {
-        throw new Error(stripeError.message);
+        throw new Error(stripeError.message || 'Payment failed');
       }
 
-      // Success!
+      // Optimistic update
+      setDisplayTotal((t) => t + amountCents);
+      setDisplayCount((c) => c + 1);
+      setSuccess(true);
       setShowPresets(false);
+      setTimeout(() => setSuccess(false), 3000);
       onTipSuccess?.();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to process tip');
+      setError(err instanceof Error ? err.message : 'Payment failed');
+      setTimeout(() => setError(null), 4000);
     } finally {
-      setLoading(false);
+      setProcessing(false);
     }
-  };
+  }
 
   return (
     <div className="relative">
+      {/* Main tip button */}
       <button
-        onClick={() => canTip && setShowPresets(!showPresets)}
-        disabled={!canTip || loading}
-        className={`flex items-center gap-1 text-sm transition ${
-          canTip
-            ? 'text-orange-400 hover:text-orange-300'
-            : 'text-zinc-600 cursor-not-allowed'
-        }`}
-        title={isOwnPost ? "Can't tip your own post" : 'Light it up! 🔥'}
+        onClick={() => {
+          if (!isLoggedIn) {
+            setError('Log in to tip');
+            setTimeout(() => setError(null), 3000);
+            return;
+          }
+          if (isOwnPost) return;
+          setShowPresets(!showPresets);
+        }}
+        className="flex items-center gap-1.5 text-sm transition-all duration-200"
+        style={{
+          color: success ? '#f59e0b' : displayTotal > 0 ? '#fbbf24' : '#71717a',
+          cursor: isOwnPost ? 'default' : 'pointer',
+          opacity: isOwnPost ? 0.4 : 1,
+        }}
+        title={isOwnPost ? "Can't tip your own post" : 'Light it up!'}
       >
-        <span>🔥</span>
-        {tipCount > 0 && (
-          <span className="text-xs">
-            {tipCount} · {formatCentsShort(tipTotalCents)}
+        <span className={success ? 'animate-bounce' : ''}>🔥</span>
+        {displayTotal > 0 && (
+          <span className="text-xs font-medium">
+            {formatCents(displayTotal)}
           </span>
         )}
       </button>
 
-      {/* Tip Presets Popup */}
+      {/* Preset selector popup */}
       {showPresets && (
         <>
-          <div 
-            className="fixed inset-0 z-40" 
-            onClick={() => setShowPresets(false)} 
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 z-40"
+            onClick={() => setShowPresets(false)}
           />
-          <div className="absolute bottom-full left-0 mb-2 z-50 bg-zinc-800 rounded-xl p-3 shadow-xl border border-zinc-700 min-w-[200px]">
-            <div className="text-xs text-zinc-400 mb-2 font-medium">Light it up! 🔥</div>
-            
-            {error && (
-              <div className="text-xs text-red-400 mb-2">{error}</div>
-            )}
-            
-            <div className="flex flex-wrap gap-2">
-              {TIP_PRESETS.map((amount) => (
-                <button
-                  key={amount}
-                  onClick={() => handleTip(amount)}
-                  disabled={loading}
-                  className="px-3 py-1.5 bg-orange-600 hover:bg-orange-500 text-white rounded-lg text-sm font-medium transition disabled:opacity-50"
-                >
-                  ${amount / 100}
-                </button>
-              ))}
-            </div>
-            
-            {loading && (
-              <div className="mt-2 text-xs text-zinc-400">Processing...</div>
-            )}
+          {/* Popup */}
+          <div
+            className="absolute bottom-full left-0 mb-2 z-50 flex gap-1.5 p-2 rounded-xl"
+            style={{
+              background: 'rgba(24,24,27,0.95)',
+              border: '1px solid rgba(251,191,36,0.2)',
+              backdropFilter: 'blur(12px)',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+            }}
+          >
+            {TIP_PRESETS.map((amount) => (
+              <button
+                key={amount}
+                onClick={() => handleTip(amount)}
+                disabled={processing}
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-150"
+                style={{
+                  background: processing
+                    ? 'rgba(63,63,70,0.5)'
+                    : 'rgba(251,191,36,0.1)',
+                  color: processing ? '#52525b' : '#fbbf24',
+                  border: '1px solid rgba(251,191,36,0.2)',
+                  cursor: processing ? 'not-allowed' : 'pointer',
+                }}
+              >
+                {processing ? '...' : formatCents(amount)}
+              </button>
+            ))}
           </div>
         </>
+      )}
+
+      {/* Error toast */}
+      {error && (
+        <div
+          className="absolute bottom-full left-0 mb-2 px-3 py-1.5 rounded-lg text-xs whitespace-nowrap z-50"
+          style={{
+            background: 'rgba(239,68,68,0.15)',
+            color: '#f87171',
+            border: '1px solid rgba(239,68,68,0.2)',
+          }}
+        >
+          {error}
+        </div>
+      )}
+
+      {/* Success toast */}
+      {success && (
+        <div
+          className="absolute bottom-full left-0 mb-2 px-3 py-1.5 rounded-lg text-xs whitespace-nowrap z-50"
+          style={{
+            background: 'rgba(251,191,36,0.15)',
+            color: '#fbbf24',
+            border: '1px solid rgba(251,191,36,0.2)',
+            animation: 'fadeSlideUp 0.3s ease-out',
+          }}
+        >
+          🔥 Lit!
+        </div>
       )}
     </div>
   );
