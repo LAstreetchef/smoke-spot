@@ -61,6 +61,9 @@ export default function SplitScreenPage() {
   const [spots, setSpots] = useState<Spot[]>([]);
   const [fireSale, setFireSale] = useState<FireSale | null>(null);
   const [showFireSale, setShowFireSale] = useState(false);
+  
+  // Add spot state
+  const [pendingSpot, setPendingSpot] = useState<{ lat: number; lng: number } | null>(null);
 
   // Load feed posts
   const loadPosts = useCallback(async () => {
@@ -169,15 +172,13 @@ export default function SplitScreenPage() {
             initialCenter={{ lat, lng }}
             spots={spots}
             onBoundsChange={() => {}}
+            onMapClick={(clickLat, clickLng) => setPendingSpot({ lat: clickLat, lng: clickLng })}
           />
         )}
-        {/* Add Spot Button */}
-        <a
-          href="/app/spot/new"
-          className="absolute top-3 right-3 z-10 bg-emerald-600 text-white px-3 py-2 rounded-full text-sm font-medium shadow-lg hover:bg-emerald-500 transition flex items-center gap-1"
-        >
-          ➕ Add Spot
-        </a>
+        {/* Tap to add hint */}
+        <div className="absolute top-3 right-3 z-10 bg-zinc-900/80 text-white px-3 py-2 rounded-lg text-xs">
+          👆 Tap map to add spot
+        </div>
         {/* Spot count indicator */}
         {spots.length > 0 && (
           <div className="absolute top-3 left-3 z-10 bg-zinc-900/80 text-white px-2 py-1 rounded text-xs">
@@ -265,6 +266,43 @@ export default function SplitScreenPage() {
           latitude={lat ?? undefined}
           longitude={lng ?? undefined}
         />
+      )}
+
+      {/* Add Spot Modal */}
+      {pendingSpot && (
+        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+          <div className="bg-zinc-800 rounded-xl p-4 w-full max-w-sm space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-bold text-white">📍 Add Spot Here?</h3>
+              <button
+                onClick={() => setPendingSpot(null)}
+                className="text-zinc-400 hover:text-white text-xl"
+              >
+                ✕
+              </button>
+            </div>
+            <p className="text-zinc-400 text-sm">
+              Drop a pin at this location to add a new smoke spot.
+            </p>
+            <p className="text-zinc-500 text-xs font-mono">
+              {pendingSpot.lat.toFixed(5)}, {pendingSpot.lng.toFixed(5)}
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setPendingSpot(null)}
+                className="flex-1 px-4 py-2 bg-zinc-700 text-white rounded-lg text-sm hover:bg-zinc-600 transition"
+              >
+                Cancel
+              </button>
+              <a
+                href={`/app/spot/new?lat=${pendingSpot.lat}&lng=${pendingSpot.lng}`}
+                className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm text-center hover:bg-emerald-500 transition"
+              >
+                Add Spot
+              </a>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

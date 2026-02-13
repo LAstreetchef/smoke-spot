@@ -21,6 +21,7 @@ interface GoogleMapProps {
   onBoundsChange?: (bounds: google.maps.LatLngBounds) => void
   onSpotClick?: (spotId: string) => void
   onMapReady?: (map: google.maps.Map) => void
+  onMapClick?: (lat: number, lng: number) => void
   spots?: Spot[]
   initialCenter?: { lat: number; lng: number }
   initialZoom?: number
@@ -55,6 +56,7 @@ export default function GoogleMapComponent({
   onBoundsChange,
   onSpotClick,
   onMapReady,
+  onMapClick,
   spots = [],
   initialCenter = { lat: 34.0522, lng: -118.2437 },
   initialZoom = 14,
@@ -145,6 +147,11 @@ export default function GoogleMapComponent({
         zoom={zoom}
         onLoad={onLoad}
         onIdle={onIdle}
+        onClick={(e) => {
+          if (onMapClick && e.latLng) {
+            onMapClick(e.latLng.lat(), e.latLng.lng())
+          }
+        }}
         mapTypeId={mapType}
         options={{
           mapTypeId: mapType as google.maps.MapTypeId,
