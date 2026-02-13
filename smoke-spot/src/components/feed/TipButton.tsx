@@ -87,20 +87,24 @@ export function TipButton({
           if (isOwnPost) return;
           setShowPresets(!showPresets);
         }}
-        className="flex items-center gap-1.5 text-sm transition-all duration-200"
+        className="flex items-center gap-1 px-2 py-1 rounded-lg transition-all duration-200"
         style={{
-          color: success ? '#f59e0b' : displayTotal > 0 ? '#fbbf24' : '#71717a',
+          background: success 
+            ? 'rgba(251,191,36,0.2)' 
+            : displayTotal > 0 
+              ? 'rgba(251,191,36,0.1)' 
+              : 'rgba(63,63,70,0.5)',
+          color: success ? '#f59e0b' : displayTotal > 0 ? '#fbbf24' : '#a1a1aa',
           cursor: isOwnPost ? 'default' : 'pointer',
           opacity: isOwnPost ? 0.4 : 1,
+          border: displayTotal > 0 ? '1px solid rgba(251,191,36,0.2)' : '1px solid transparent',
         }}
         title={isOwnPost ? "Can't tip your own post" : 'Light it up!'}
       >
         <span className={success ? 'animate-bounce' : ''}>🔥</span>
-        {displayTotal > 0 && (
-          <span className="text-xs font-medium">
-            {formatCents(displayTotal)}
-          </span>
-        )}
+        <span className="text-xs font-semibold">
+          ${(displayTotal / 100).toFixed(0) || '0'}
+        </span>
       </button>
 
       {/* Preset selector popup */}
