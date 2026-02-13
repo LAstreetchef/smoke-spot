@@ -12,8 +12,16 @@ export async function GET() {
     });
   }
 
+  const keyInfo = {
+    length: key.length,
+    prefix: key.substring(0, 15),
+    suffix: key.substring(key.length - 5),
+    hasNewline: key.includes('\n'),
+    hasSpace: key.includes(' '),
+  };
+
   try {
-    const stripe = new Stripe(key);
+    const stripe = new Stripe(key.trim());
     const intent = await stripe.paymentIntents.create({
       amount: 100,
       currency: 'usd',
@@ -23,12 +31,12 @@ export async function GET() {
     return NextResponse.json({ 
       success: true, 
       intent_id: intent.id,
-      key_prefix: key.substring(0, 10) + '...'
+      keyInfo
     });
   } catch (err) {
     return NextResponse.json({ 
       error: err instanceof Error ? err.message : 'Unknown',
-      stack: err instanceof Error ? err.stack : undefined
+      keyInfo
     });
   }
 }
