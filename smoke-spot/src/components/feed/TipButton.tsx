@@ -2,7 +2,7 @@
 'use client';
 
 import { useState } from 'react';
-import { createTipIntent, formatCents } from '@/lib/tipping';
+import { formatCents } from '@/lib/tipping';
 import { TIP_PRESETS, type TipPreset } from '@/types/tipping';
 
 interface TipButtonProps {
@@ -38,38 +38,40 @@ export function TipButton({
     setError(null);
 
     try {
-      const { client_secret } = await createTipIntent(postId, amountCents);
-
-      // Load Stripe.js and confirm payment
-      // This assumes @stripe/stripe-js is installed
-      const { loadStripe } = await import('@stripe/stripe-js');
-      const stripe = await loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
-
-      if (!stripe) throw new Error('Stripe failed to load');
-
-      const { error: stripeError } = await stripe.confirmPayment({
-        clientSecret: client_secret,
-        confirmParams: {
-          return_url: `${window.location.origin}/app?tip_success=true`,
-        },
-        redirect: 'if_required',
-      });
-
-      if (stripeError) {
-        throw new Error(stripeError.message || 'Payment failed');
+      // Get Supabase session for auth
+      const { createClient } = await import('@/lib/supabase/client');
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        throw new Error('Please log in to tip');
       }
 
-      // Optimistic update
-      setDisplayTotal((t) => t + amountCents);
-      setDisplayCount((c) => c + 1);
-      setSuccess(true);
-      setShowPresets(false);
-      setTimeout(() => setSuccess(false), 3000);
-      onTipSuccess?.();
+      // Create Stripe Checkout session
+      const res = await fetch('/api/tips/create-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ post_id: postId, amount_cents: amountCents }),
+      });
+
+      const data = await res.json();
+      
+      if (!res.ok) {
+        throw new Error(data.error || 'Payment failed');
+      }
+
+      // Redirect to Stripe Checkout
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error('No checkout URL received');
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Payment failed');
       setTimeout(() => setError(null), 4000);
-    } finally {
       setProcessing(false);
     }
   }
