@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { GoogleMap, useJsApiLoader, Marker } from '@react-google-maps/api'
@@ -37,7 +37,7 @@ const mapContainerStyle = {
 
 const defaultCenter = { lat: 34.0522, lng: -118.2437 }
 
-export default function NewSpotPage() {
+function NewSpotContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { showToast } = useToast()
@@ -487,5 +487,13 @@ export default function NewSpotPage() {
         </div>
       )}
     </main>
+  )
+}
+
+export default function NewSpotPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen bg-primary"><div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" /></div>}>
+      <NewSpotContent />
+    </Suspense>
   )
 }
