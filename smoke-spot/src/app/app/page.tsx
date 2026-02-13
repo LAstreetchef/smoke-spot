@@ -287,7 +287,13 @@ export default function SplitScreenPage() {
       {fireSale && showFireSale && (
         <FireSalePopup
           fireSale={fireSale}
-          onClose={() => setShowFireSale(false)}
+          onDismiss={() => setShowFireSale(false)}
+          onClaim={() => {
+            window.open(fireSale.click_url, '_blank');
+            setShowFireSale(false);
+          }}
+          latitude={lat}
+          longitude={lng}
         />
       )}
     </div>
