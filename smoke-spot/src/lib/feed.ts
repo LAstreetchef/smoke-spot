@@ -52,8 +52,8 @@ export async function createPost(payload: CreatePostPayload): Promise<FeedPost> 
       nickname: payload.nickname ?? 'Anonymous',
       content: payload.content,
       image_url: payload.image_url ?? null,
-      lat: payload.lat,
-      lng: payload.lng,
+      latitude: payload.latitude,
+      longitude: payload.longitude,
       spot_id: payload.spot_id ?? null,
     })
     .select()
