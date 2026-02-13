@@ -1,10 +1,9 @@
 // app/app/page.tsx
-// Split screen: Map + Feed side by side
+// Split screen: Map + Feed - always visible, stacked on mobile, side-by-side on desktop
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import dynamic from 'next/dynamic';
-import Link from 'next/link';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { fetchGlobalFeed } from '@/lib/feed';
 import { PostComposer } from '@/components/feed/PostComposer';
@@ -60,12 +59,8 @@ export default function SplitScreenPage() {
   
   // Map state
   const [spots, setSpots] = useState<Spot[]>([]);
-  const [mapLoading, setMapLoading] = useState(true);
   const [fireSale, setFireSale] = useState<FireSale | null>(null);
   const [showFireSale, setShowFireSale] = useState(false);
-  
-  // Mobile view toggle
-  const [mobileView, setMobileView] = useState<'map' | 'feed'>('map');
 
   // Load feed posts
   const loadPosts = useCallback(async () => {
@@ -90,7 +85,6 @@ export default function SplitScreenPage() {
   const loadSpots = useCallback(async () => {
     if (!lat || !lng) return;
     const supabase = createClient();
-    setMapLoading(true);
     try {
       const { data } = await supabase
         .from('spots')
@@ -103,8 +97,6 @@ export default function SplitScreenPage() {
       setSpots(data || []);
     } catch (err) {
       console.error('Failed to load spots:', err);
-    } finally {
-      setMapLoading(false);
     }
   }, [lat, lng]);
 
@@ -169,119 +161,82 @@ export default function SplitScreenPage() {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-zinc-900">
-      {/* Mobile Tab Switcher */}
-      <div className="md:hidden flex border-b border-zinc-800">
-        <button
-          onClick={() => setMobileView('map')}
-          className={`flex-1 py-3 text-sm font-medium transition ${
-            mobileView === 'map'
-              ? 'text-emerald-400 border-b-2 border-emerald-400'
-              : 'text-zinc-500'
-          }`}
-        >
-          🗺️ Map
-        </button>
-        <button
-          onClick={() => setMobileView('feed')}
-          className={`flex-1 py-3 text-sm font-medium transition ${
-            mobileView === 'feed'
-              ? 'text-emerald-400 border-b-2 border-emerald-400'
-              : 'text-zinc-500'
-          }`}
-        >
-          💬 Feed
-        </button>
+    <div className="h-screen flex flex-col md:flex-row bg-zinc-900">
+      {/* Map Panel - top 2/3 on mobile, left 2/3 on desktop */}
+      <div className="h-[60vh] md:h-full md:w-2/3 relative">
+        {lat && lng && (
+          <Map
+            initialCenter={{ lat, lng }}
+            spots={spots}
+            onBoundsChange={() => {}}
+          />
+        )}
       </div>
 
-      {/* Main Split Container */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Map Panel (2/3 on desktop, full on mobile when selected) */}
-        <div
-          className={`${
-            mobileView === 'map' ? 'flex' : 'hidden'
-          } md:flex md:w-2/3 flex-col flex-1`}
-        >
-          <div className="flex-1 relative">
-            {lat && lng && (
-              <Map
-                initialCenter={{ lat, lng }}
-                spots={spots}
-                onBoundsChange={() => {}}
-              />
-            )}
+      {/* Feed Panel - bottom 1/3 on mobile, right 1/3 on desktop */}
+      <div className="flex-1 md:w-1/3 flex flex-col border-t md:border-t-0 md:border-l border-zinc-800 bg-zinc-900 overflow-hidden">
+        {/* Feed Header */}
+        <div className="p-3 border-b border-zinc-800 shrink-0">
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-base font-bold text-white">💬 Feed</h2>
+            <button
+              onClick={() => setShowComposer(!showComposer)}
+              className="px-3 py-1 bg-emerald-600 text-white rounded-full text-xs font-medium hover:bg-emerald-500 transition"
+            >
+              {showComposer ? '✕' : '+'}
+            </button>
+          </div>
+          
+          {/* Sort & Radius Controls */}
+          <div className="flex items-center justify-between gap-2">
+            <FeedSortToggle sort={sort} onSortChange={setSort} />
+            <select
+              value={radius}
+              onChange={(e) => setRadius(Number(e.target.value))}
+              className="bg-zinc-800 text-zinc-300 text-xs rounded-lg px-2 py-1 border border-zinc-700"
+            >
+              {RADIUS_OPTIONS.map((r) => (
+                <option key={r} value={r}>
+                  {r} mi
+                </option>
+              ))}
+            </select>
           </div>
         </div>
 
-        {/* Feed Panel (1/3 on desktop, full on mobile when selected) */}
-        <div
-          className={`${
-            mobileView === 'feed' ? 'flex' : 'hidden'
-          } md:flex md:w-1/3 flex-col border-l border-zinc-800 bg-zinc-900`}
-        >
-          {/* Feed Header */}
-          <div className="p-4 border-b border-zinc-800">
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-lg font-bold text-white">💬 Feed</h2>
-              <button
-                onClick={() => setShowComposer(!showComposer)}
-                className="px-3 py-1.5 bg-emerald-600 text-white rounded-full text-xs font-medium hover:bg-emerald-500 transition"
-              >
-                {showComposer ? '✕' : '+ Post'}
-              </button>
-            </div>
-            
-            {/* Sort & Radius Controls */}
-            <div className="flex items-center justify-between gap-2">
-              <FeedSortToggle sort={sort} onSortChange={setSort} />
-              <select
-                value={radius}
-                onChange={(e) => setRadius(Number(e.target.value))}
-                className="bg-zinc-800 text-zinc-300 text-xs rounded-lg px-2 py-1.5 border border-zinc-700"
-              >
-                {RADIUS_OPTIONS.map((r) => (
-                  <option key={r} value={r}>
-                    {r} mi
-                  </option>
-                ))}
-              </select>
-            </div>
+        {/* Composer */}
+        {showComposer && lat && lng && (
+          <div className="p-3 border-b border-zinc-800 shrink-0">
+            <PostComposer
+              lat={lat}
+              lng={lng}
+              spotId={null}
+              onPost={() => {
+                setShowComposer(false);
+                loadPosts();
+              }}
+            />
           </div>
+        )}
 
-          {/* Composer */}
-          {showComposer && lat && lng && (
-            <div className="p-4 border-b border-zinc-800">
-              <PostComposer
-                lat={lat}
-                lng={lng}
-                spotId={null}
-                onPost={() => {
-                  setShowComposer(false);
-                  loadPosts();
-                }}
-              />
+        {/* Feed Content - scrollable */}
+        <div className="flex-1 overflow-y-auto p-3 space-y-2">
+          {feedLoading && posts.length === 0 ? (
+            <div className="space-y-2">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="bg-zinc-800/50 rounded-lg h-20 animate-pulse" />
+              ))}
             </div>
+          ) : posts.length === 0 ? (
+            <div className="text-center py-8 space-y-1">
+              <p className="text-zinc-400 text-sm">No posts within {radius} mi</p>
+              <p className="text-zinc-500 text-xs">Be the first! 🌿</p>
+            </div>
+          ) : (
+            posts.map((post) => (
+              <FeedCard key={post.id} post={post} onVote={loadPosts} showDistance />
+            ))
           )}
-
-          {/* Feed Content */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-3">
-            {feedLoading && posts.length === 0 ? (
-              <div className="space-y-3">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="bg-zinc-800/50 rounded-xl h-24 animate-pulse" />
-                ))}
-              </div>
-            ) : posts.length === 0 ? (
-              <div className="text-center py-12 space-y-2">
-                <p className="text-zinc-400 text-sm">No posts within {radius} mi</p>
-                <p className="text-zinc-500 text-xs">Be the first! 🌿</p>
-              </div>
-            ) : (
-              posts.map((post) => (
-                <FeedCard key={post.id} post={post} onVote={loadPosts} showDistance />
-              ))
-            )}
-          </div>
         </div>
       </div>
 
