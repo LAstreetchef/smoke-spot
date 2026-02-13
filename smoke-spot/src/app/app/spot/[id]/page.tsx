@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import ShareSheet from '@/components/ShareSheet'
 import { useToast } from '@/components/Toast'
+import { SpotChatButton } from '@/components/feed/SpotChatButton'
 
 interface Spot {
   id: string
@@ -558,6 +559,7 @@ export default function SpotDetailPage() {
           >
             🧭 Get Directions
           </button>
+          <SpotChatButton spotId={spot.id} className="py-3" />
           <button
             onClick={() => setShowShareSheet(true)}
             className="px-4 py-3 bg-secondary border border-neutral/20 text-neutral rounded-xl hover:bg-secondary/80 transition"
