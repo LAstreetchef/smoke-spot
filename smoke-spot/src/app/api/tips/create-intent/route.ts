@@ -43,7 +43,11 @@ export async function POST(req: NextRequest) {
       .eq('id', post_id)
       .single();
 
-    if (postError || !post) {
+    if (postError) {
+      console.error('Post lookup error:', postError);
+      return NextResponse.json({ error: `Post error: ${postError.message}` }, { status: 404 });
+    }
+    if (!post) {
       return NextResponse.json({ error: 'Post not found' }, { status: 404 });
     }
 
@@ -77,8 +81,9 @@ export async function POST(req: NextRequest) {
     });
   } catch (err) {
     console.error('Error creating tip payment intent:', err);
+    const message = err instanceof Error ? err.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to create payment' },
+      { error: `Payment failed: ${message}` },
       { status: 500 }
     );
   }
