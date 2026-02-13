@@ -192,7 +192,7 @@ export default function SplitScreenPage() {
         {/* Feed Header */}
         <div className="p-3 border-b border-zinc-800 shrink-0">
           <div className="flex items-center justify-between mb-2">
-            <h2 className="text-base font-bold text-white">💬 Feed</h2>
+            <h2 className="text-base font-bold text-white">💨 Smoke Ring</h2>
             <button
               onClick={() => setShowComposer(!showComposer)}
               className="px-3 py-1 bg-emerald-600 text-white rounded-full text-xs font-medium hover:bg-emerald-500 transition"
