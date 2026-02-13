@@ -200,15 +200,17 @@ export default function SplitScreenPage() {
         <div
           className={`${
             mobileView === 'map' ? 'flex' : 'hidden'
-          } lg:flex lg:w-2/3 flex-col`}
+          } lg:flex lg:w-2/3 flex-col flex-1`}
         >
-          {lat && lng && (
-            <Map
-              initialCenter={{ lat, lng }}
-              spots={spots}
-              onBoundsChange={() => {}}
-            />
-          )}
+          <div className="flex-1 relative">
+            {lat && lng && (
+              <Map
+                initialCenter={{ lat, lng }}
+                spots={spots}
+                onBoundsChange={() => {}}
+              />
+            )}
+          </div>
         </div>
 
         {/* Feed Panel (1/3 on desktop, full on mobile when selected) */}
