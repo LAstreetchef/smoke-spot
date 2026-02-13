@@ -5,7 +5,8 @@ import { createClient } from '@supabase/supabase-js';
 
 export async function POST(req: NextRequest) {
   // Initialize inside handler to ensure env vars are available
-  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '');
+  // Trim to remove any trailing newlines from env vars
+  const stripe = new Stripe((process.env.STRIPE_SECRET_KEY || '').trim());
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL || '',
     process.env.SUPABASE_SERVICE_ROLE_KEY || ''
