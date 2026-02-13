@@ -129,7 +129,7 @@ export default function SpotFeedPage() {
 
         {/* Sort Toggle */}
         <div className="mb-4 flex justify-center">
-          <FeedSortToggle sortBy={sortBy} onSortChange={setSortBy} />
+          <FeedSortToggle sort={sortBy} onSortChange={setSortBy} />
         </div>
 
         {/* Feed */}
