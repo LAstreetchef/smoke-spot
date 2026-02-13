@@ -17,6 +17,8 @@ export interface FeedPost {
   expires_at: string;
   created_at: string;
   distance_miles?: number; // Only present in global feed
+  tip_total_cents?: number; // Light It Up! 🔥 tipping
+  tip_count?: number; // Number of tips received
 }
 
 export interface FeedComment {

@@ -1,9 +1,11 @@
 // components/feed/FeedCard.tsx
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { voteOnPost } from '@/lib/feed';
 import { CommentsSection } from '@/components/feed/CommentsSection';
+import { TipButton } from '@/components/feed/TipButton';
+import { createClient } from '@/lib/supabase/client';
 import type { FeedPost } from '@/types/feed';
 
 interface FeedCardProps {
@@ -17,6 +19,14 @@ export function FeedCard({ post, onVote, showDistance = true }: FeedCardProps) {
   const [myVote, setMyVote] = useState<-1 | 1 | null>(null);
   const [voting, setVoting] = useState(false);
   const [showComments, setShowComments] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  // Get current user ID for tipping
+  useEffect(() => {
+    createClient().auth.getUser().then(({ data }) => {
+      setCurrentUserId(data.user?.id ?? null);
+    });
+  }, []);
 
   async function handleVote(direction: 1 | -1) {
     if (voting) return;
@@ -80,7 +90,7 @@ export function FeedCard({ post, onVote, showDistance = true }: FeedCardProps) {
         />
       )}
 
-      {/* Actions: vote + comments */}
+      {/* Actions: vote + comments + tip */}
       <div className="flex items-center gap-4 pt-1">
         {/* Upvote */}
         <button
@@ -120,6 +130,16 @@ export function FeedCard({ post, onVote, showDistance = true }: FeedCardProps) {
         >
           💬 {post.comment_count}
         </button>
+
+        {/* Tip Button - Light It Up! 🔥 */}
+        <TipButton
+          postId={post.id}
+          postUserId={post.user_id}
+          currentUserId={currentUserId}
+          tipCount={post.tip_count ?? 0}
+          tipTotalCents={post.tip_total_cents ?? 0}
+          onTipSuccess={onVote}
+        />
       </div>
 
       {/* Comments section */}
