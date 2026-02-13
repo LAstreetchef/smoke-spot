@@ -292,8 +292,8 @@ export default function SplitScreenPage() {
             window.open(fireSale.click_url, '_blank');
             setShowFireSale(false);
           }}
-          latitude={lat}
-          longitude={lng}
+          latitude={lat ?? undefined}
+          longitude={lng ?? undefined}
         />
       )}
     </div>
