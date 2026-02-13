@@ -149,7 +149,7 @@ export default function SpotFeedPage() {
               <FeedCard
                 key={post.id}
                 post={post}
-                onDelete={() => handlePostDeleted(post.id)}
+                onVote={loadFeed}
                 showDistance={false}
               />
             ))}
