@@ -84,7 +84,11 @@ export function TipButton({
             setTimeout(() => setError(null), 3000);
             return;
           }
-          if (isOwnPost) return;
+          if (isOwnPost) {
+            setError("Can't tip your own post");
+            setTimeout(() => setError(null), 3000);
+            return;
+          }
           setShowPresets(!showPresets);
         }}
         className="flex items-center gap-1 px-2 py-1 rounded-lg transition-all duration-200"
@@ -107,42 +111,52 @@ export function TipButton({
         </span>
       </button>
 
-      {/* Preset selector popup */}
+      {/* Preset selector popup - FIXED positioning */}
       {showPresets && (
         <>
           {/* Backdrop */}
           <div
-            className="fixed inset-0 z-40"
+            className="fixed inset-0 z-40 bg-black/50"
             onClick={() => setShowPresets(false)}
           />
-          {/* Popup */}
+          {/* Popup - centered on screen for mobile */}
           <div
-            className="absolute bottom-full left-0 mb-2 z-50 flex gap-1.5 p-2 rounded-xl"
+            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 flex flex-col gap-3 p-4 rounded-2xl"
             style={{
-              background: 'rgba(24,24,27,0.95)',
-              border: '1px solid rgba(251,191,36,0.2)',
+              background: 'rgba(24,24,27,0.98)',
+              border: '1px solid rgba(251,191,36,0.3)',
               backdropFilter: 'blur(12px)',
-              boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.7)',
+              minWidth: '280px',
             }}
           >
-            {TIP_PRESETS.map((amount) => (
-              <button
-                key={amount}
-                onClick={() => handleTip(amount)}
-                disabled={processing}
-                className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-150"
-                style={{
-                  background: processing
-                    ? 'rgba(63,63,70,0.5)'
-                    : 'rgba(251,191,36,0.1)',
-                  color: processing ? '#52525b' : '#fbbf24',
-                  border: '1px solid rgba(251,191,36,0.2)',
-                  cursor: processing ? 'not-allowed' : 'pointer',
-                }}
-              >
-                {processing ? '...' : formatCents(amount)}
-              </button>
-            ))}
+            <p className="text-center text-amber-400 text-sm font-medium">🔥 Light It Up!</p>
+            <div className="flex flex-wrap justify-center gap-2">
+              {TIP_PRESETS.map((amount) => (
+                <button
+                  key={amount}
+                  onClick={() => handleTip(amount)}
+                  disabled={processing}
+                  className="px-4 py-2 rounded-xl text-sm font-bold transition-all duration-150"
+                  style={{
+                    background: processing
+                      ? 'rgba(63,63,70,0.5)'
+                      : 'rgba(251,191,36,0.15)',
+                    color: processing ? '#52525b' : '#fbbf24',
+                    border: '1px solid rgba(251,191,36,0.3)',
+                    cursor: processing ? 'not-allowed' : 'pointer',
+                  }}
+                >
+                  {processing ? '...' : formatCents(amount)}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => setShowPresets(false)}
+              className="text-zinc-500 text-xs mt-1"
+            >
+              Cancel
+            </button>
           </div>
         </>
       )}
