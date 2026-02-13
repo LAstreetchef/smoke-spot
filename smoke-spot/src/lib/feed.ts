@@ -18,9 +18,9 @@ export async function fetchGlobalFeed(filters: GlobalFeedFilters): Promise<FeedP
     user_lat: filters.lat,
     user_lng: filters.lng,
     radius_miles: filters.radius_miles,
-    sort_by: filters.sort_by,
-    page_limit: filters.page_limit ?? 50,
-    page_offset: filters.page_offset ?? 0,
+    sort_by: filters.sort,
+    page_limit: filters.limit ?? 50,
+    page_offset: filters.offset ?? 0,
   });
 
   if (error) throw new Error(error.message);
@@ -31,9 +31,9 @@ export async function fetchGlobalFeed(filters: GlobalFeedFilters): Promise<FeedP
 export async function fetchSpotFeed(filters: SpotFeedFilters): Promise<FeedPost[]> {
   const { data, error } = await supabase.rpc('spot_feed', {
     p_spot_id: filters.spot_id,
-    sort_by: filters.sort_by,
-    page_limit: filters.page_limit ?? 50,
-    page_offset: filters.page_offset ?? 0,
+    sort_by: filters.sort,
+    page_limit: filters.limit ?? 50,
+    page_offset: filters.offset ?? 0,
   });
 
   if (error) throw new Error(error.message);
