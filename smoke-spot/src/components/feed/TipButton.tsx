@@ -81,14 +81,18 @@ export function TipButton({
       {/* Main tip button */}
       <button
         onClick={() => {
-          console.log('Tip button clicked', { isLoggedIn, isOwnPost, currentUserId, postUserId });
           if (!isLoggedIn) {
             setError('Log in to tip');
             setTimeout(() => setError(null), 3000);
             return;
           }
           if (isOwnPost) {
-            setError("Can't tip your own post");
+            // Show earnings info instead of error
+            if (displayTotal > 0) {
+              setError(`🔥 You earned ${formatCents(displayTotal)} from tips!`);
+            } else {
+              setError('Share great content to earn tips!');
+            }
             setTimeout(() => setError(null), 3000);
             return;
           }
@@ -164,12 +168,14 @@ export function TipButton({
         </>
       )}
 
-      {/* Error toast - fixed position */}
+      {/* Toast - fixed position */}
       {error && (
         <div
           className="fixed top-20 left-1/2 -translate-x-1/2 px-4 py-2 rounded-lg text-sm z-[100]"
           style={{
-            background: 'rgba(239,68,68,0.95)',
+            background: error.includes('earned') || error.includes('Share') 
+              ? 'rgba(251,191,36,0.95)' 
+              : 'rgba(239,68,68,0.95)',
             color: '#fff',
             boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
           }}
