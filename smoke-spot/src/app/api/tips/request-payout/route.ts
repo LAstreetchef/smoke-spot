@@ -101,7 +101,7 @@ export async function POST(req: NextRequest) {
       .from('user_earnings')
       .update({
         pending_balance_cents: 0,
-        total_withdrawn_cents: supabase.rpc ? payoutAmount : payoutAmount, // simplified
+        total_withdrawn_cents: payoutAmount,
         last_payout_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })
