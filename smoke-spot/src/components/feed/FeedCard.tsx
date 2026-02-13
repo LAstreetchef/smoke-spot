@@ -13,8 +13,8 @@ interface FeedCardProps {
 }
 
 export function FeedCard({ post, onVote, showDistance = true }: FeedCardProps) {
-  const [score, setScore] = useState(post.vote_score);
-  const [myVote, setMyVote] = useState(post.my_vote);
+  const [score, setScore] = useState(post.score);
+  const [myVote, setMyVote] = useState<-1 | 1 | null>(null);
   const [voting, setVoting] = useState(false);
   const [showComments, setShowComments] = useState(false);
 
@@ -36,8 +36,8 @@ export function FeedCard({ post, onVote, showDistance = true }: FeedCardProps) {
       setScore(newScore);
     } catch {
       // Revert on error
-      setScore(post.vote_score);
-      setMyVote(post.my_vote);
+      setScore(post.score);
+      setMyVote(null);
     } finally {
       setVoting(false);
     }
