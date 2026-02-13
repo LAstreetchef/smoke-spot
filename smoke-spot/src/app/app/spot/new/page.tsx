@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { GoogleMap, useJsApiLoader, Marker } from '@react-google-maps/api'
 import { createClient } from '@/lib/supabase/client'
@@ -39,6 +39,7 @@ const defaultCenter = { lat: 34.0522, lng: -118.2437 }
 
 export default function NewSpotPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { showToast } = useToast()
   const mapRef = useRef<google.maps.Map | null>(null)
   const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null)
@@ -64,6 +65,24 @@ export default function NewSpotPage() {
     amenities: [] as string[],
     operating_hours: '',
   })
+
+  // Read lat/lng from query params (from map tap)
+  useEffect(() => {
+    const lat = searchParams.get('lat')
+    const lng = searchParams.get('lng')
+    if (lat && lng) {
+      const latNum = parseFloat(lat)
+      const lngNum = parseFloat(lng)
+      if (!isNaN(latNum) && !isNaN(lngNum)) {
+        setMarkerPosition({ lat: latNum, lng: lngNum })
+        setFormData(prev => ({
+          ...prev,
+          latitude: latNum,
+          longitude: lngNum,
+        }))
+      }
+    }
+  }, [searchParams])
 
   // Initialize Places Autocomplete
   useEffect(() => {
@@ -459,7 +478,7 @@ export default function NewSpotPage() {
             </button>
             <button
               onClick={handleSubmit}
-              disabled={loading || !formData.name || !formData.description}
+              disabled={loading || !formData.name || !formData.latitude}
               className="flex-1 py-3 bg-accent text-white rounded-xl font-semibold hover:bg-accent/90 transition disabled:opacity-50"
             >
               {loading ? 'Creating...' : 'Create Spot'}
