@@ -171,7 +171,7 @@ export default function SplitScreenPage() {
   return (
     <div className="h-screen flex flex-col bg-zinc-900">
       {/* Mobile Tab Switcher */}
-      <div className="lg:hidden flex border-b border-zinc-800">
+      <div className="md:hidden flex border-b border-zinc-800">
         <button
           onClick={() => setMobileView('map')}
           className={`flex-1 py-3 text-sm font-medium transition ${
@@ -200,7 +200,7 @@ export default function SplitScreenPage() {
         <div
           className={`${
             mobileView === 'map' ? 'flex' : 'hidden'
-          } lg:flex lg:w-2/3 flex-col flex-1`}
+          } md:flex md:w-2/3 flex-col flex-1`}
         >
           <div className="flex-1 relative">
             {lat && lng && (
@@ -217,7 +217,7 @@ export default function SplitScreenPage() {
         <div
           className={`${
             mobileView === 'feed' ? 'flex' : 'hidden'
-          } lg:flex lg:w-1/3 flex-col border-l border-zinc-800 bg-zinc-900`}
+          } md:flex md:w-1/3 flex-col border-l border-zinc-800 bg-zinc-900`}
         >
           {/* Feed Header */}
           <div className="p-4 border-b border-zinc-800">
