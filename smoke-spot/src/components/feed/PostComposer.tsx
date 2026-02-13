@@ -35,8 +35,8 @@ export function PostComposer({ lat, lng, spotId, onPost }: PostComposerProps) {
 
       await createPost({
         content,
-        lat,
-        lng,
+        latitude: lat,
+        longitude: lng,
         image_url,
         spot_id: spotId,
       });
