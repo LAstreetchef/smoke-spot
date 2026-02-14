@@ -185,24 +185,38 @@ export default function SplitScreenPage() {
           <form
             onSubmit={async (e) => {
               e.preventDefault();
-              const input = (e.target as HTMLFormElement).querySelector('input');
+              const form = e.target as HTMLFormElement;
+              const input = form.querySelector('input') as HTMLInputElement;
+              const btn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
               const query = input?.value;
               if (!query) return;
               
-              // Use a geocoding API to convert address to coordinates
+              btn.textContent = 'Searching...';
+              btn.disabled = true;
+              
               try {
-                const res = await fetch(
-                  `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(query)}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`
-                );
+                const res = await fetch(`/api/geocode?q=${encodeURIComponent(query)}`);
                 const data = await res.json();
-                if (data.results?.[0]?.geometry?.location) {
-                  const { lat: newLat, lng: newLng } = data.results[0].geometry.location;
-                  // Store in localStorage and reload
-                  localStorage.setItem('manualLocation', JSON.stringify({ lat: newLat, lng: newLng }));
+                
+                if (data.lat && data.lng) {
+                  localStorage.setItem('manualLocation', JSON.stringify({ lat: data.lat, lng: data.lng }));
                   window.location.reload();
+                } else {
+                  input.style.borderColor = '#ef4444';
+                  btn.textContent = 'Not found - try again';
+                  setTimeout(() => {
+                    btn.textContent = 'Search Location';
+                    btn.disabled = false;
+                    input.style.borderColor = '';
+                  }, 2000);
                 }
               } catch (err) {
                 console.error('Geocoding failed:', err);
+                btn.textContent = 'Error - try again';
+                setTimeout(() => {
+                  btn.textContent = 'Search Location';
+                  btn.disabled = false;
+                }, 2000);
               }
             }}
             className="space-y-2"
