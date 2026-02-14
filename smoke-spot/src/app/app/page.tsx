@@ -307,10 +307,11 @@ export default function SplitScreenPage() {
         {/* Feed Header */}
         <div className="p-3 border-b border-zinc-800 shrink-0">
           <div className="flex items-center justify-between mb-2">
-            <h2 className="text-base font-bold text-white">💨 Smoke Ring</h2>
+            <h2 className="text-base font-bold text-white">📍 Nearby</h2>
             <button
               onClick={() => setShowComposer(!showComposer)}
               className="px-3 py-1 bg-emerald-600 text-white rounded-full text-xs font-medium hover:bg-emerald-500 transition"
+              title="Post to nearby area"
             >
               {showComposer ? '✕' : '+'}
             </button>
@@ -357,9 +358,9 @@ export default function SplitScreenPage() {
               ))}
             </div>
           ) : posts.length === 0 ? (
-            <div className="text-center py-8 space-y-1">
+            <div className="text-center py-8 space-y-2">
               <p className="text-zinc-400 text-sm">No posts within {radius} mi</p>
-              <p className="text-zinc-500 text-xs">Be the first! 🌿</p>
+              <p className="text-zinc-500 text-xs">Tap a spot on the map to join its Smoke Ring 💨</p>
             </div>
           ) : (
             posts.map((post) => (
