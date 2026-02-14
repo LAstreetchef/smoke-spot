@@ -1,9 +1,10 @@
 // components/feed/TipButton.tsx
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { formatCents } from '@/lib/tipping';
-import { TIP_PRESETS, type TipPreset } from '@/types/tipping';
+
+const TIP_AMOUNTS = [100, 200, 500] as const; // $1, $2, $5
 
 interface TipButtonProps {
   postId: string;
@@ -11,7 +12,12 @@ interface TipButtonProps {
   currentUserId: string | null;
   tipCount: number;
   tipTotalCents: number;
-  onTipSuccess?: () => void;
+}
+
+interface PaymentInfo {
+  venmo: string | null;
+  paypal: string | null;
+  hasPayment: boolean;
 }
 
 export function TipButton({
@@ -20,147 +26,175 @@ export function TipButton({
   currentUserId,
   tipCount,
   tipTotalCents,
-  onTipSuccess,
 }: TipButtonProps) {
-  const [showPresets, setShowPresets] = useState(false);
-  const [processing, setProcessing] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [displayTotal, setDisplayTotal] = useState(tipTotalCents);
-  const [displayCount, setDisplayCount] = useState(tipCount);
+  const [showModal, setShowModal] = useState(false);
+  const [paymentInfo, setPaymentInfo] = useState<PaymentInfo | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
 
   const isOwnPost = currentUserId === postUserId;
-  const isLoggedIn = !!currentUserId;
 
-  async function handleTip(amountCents: TipPreset) {
-    if (!isLoggedIn || isOwnPost || processing) return;
-    setProcessing(true);
-    setError(null);
-
-    try {
-      // Get Supabase session for auth
-      const { createClient } = await import('@/lib/supabase/client');
-      const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        throw new Error('Please log in to tip');
-      }
-
-      // Create Stripe Checkout session
-      const res = await fetch('/api/tips/create-session', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({ post_id: postId, amount_cents: amountCents }),
-      });
-
-      const data = await res.json();
-      
-      if (!res.ok) {
-        throw new Error(data.error || 'Payment failed');
-      }
-
-      // Redirect to Stripe Checkout
-      if (data.url) {
-        window.location.href = data.url;
+  async function handleClick() {
+    if (isOwnPost) {
+      if (tipTotalCents > 0) {
+        setToast(`🔥 You've received ${formatCents(tipTotalCents)} in tips!`);
       } else {
-        throw new Error('No checkout URL received');
+        setToast('Share great posts to receive tips!');
       }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Payment failed');
-      setTimeout(() => setError(null), 4000);
-      setProcessing(false);
+      setTimeout(() => setToast(null), 3000);
+      return;
     }
+
+    // Fetch recipient's payment info
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/tips/payment-links?post_id=${postId}`);
+      const data = await res.json();
+      setPaymentInfo(data);
+      
+      if (!data.hasPayment) {
+        setToast('This user hasn\'t set up payments yet');
+        setTimeout(() => setToast(null), 3000);
+        return;
+      }
+      
+      setShowModal(true);
+    } catch (err) {
+      setToast('Failed to load payment info');
+      setTimeout(() => setToast(null), 3000);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function openPayment(type: 'venmo' | 'paypal', amount: number) {
+    const amountDollars = amount / 100;
+    const note = encodeURIComponent('🔥 Smoke Spot tip');
+    
+    let url = '';
+    if (type === 'venmo' && paymentInfo?.venmo) {
+      // Venmo deep link
+      url = `venmo://paycharge?txn=pay&recipients=${paymentInfo.venmo}&amount=${amountDollars}&note=${note}`;
+      // Fallback for web
+      window.location.href = url;
+      setTimeout(() => {
+        window.open(`https://venmo.com/${paymentInfo.venmo}?txn=pay&amount=${amountDollars}&note=${note}`, '_blank');
+      }, 500);
+    } else if (type === 'paypal' && paymentInfo?.paypal) {
+      // PayPal.me link
+      url = `https://paypal.me/${paymentInfo.paypal}/${amountDollars}`;
+      window.open(url, '_blank');
+    }
+    
+    setShowModal(false);
+    setToast('🔥 Opening payment app...');
+    setTimeout(() => setToast(null), 2000);
   }
 
   return (
     <div className="relative">
       {/* Main tip button */}
       <button
-        onClick={() => {
-          if (!isLoggedIn) {
-            setError('Log in to tip');
-            setTimeout(() => setError(null), 3000);
-            return;
-          }
-          if (isOwnPost) {
-            // Show earnings info instead of error
-            if (displayTotal > 0) {
-              setError(`🔥 You earned ${formatCents(displayTotal)} from tips!`);
-            } else {
-              setError('Share great content to earn tips!');
-            }
-            setTimeout(() => setError(null), 3000);
-            return;
-          }
-          setShowPresets(true);
-        }}
+        onClick={handleClick}
+        disabled={loading}
         className="flex items-center gap-1 px-2 py-1 rounded-lg transition-all duration-200"
         style={{
-          background: success 
-            ? 'rgba(251,191,36,0.2)' 
-            : displayTotal > 0 
-              ? 'rgba(251,191,36,0.1)' 
-              : 'rgba(63,63,70,0.5)',
-          color: success ? '#f59e0b' : displayTotal > 0 ? '#fbbf24' : '#a1a1aa',
+          background: tipTotalCents > 0 
+            ? 'rgba(251,191,36,0.1)' 
+            : 'rgba(63,63,70,0.5)',
+          color: tipTotalCents > 0 ? '#fbbf24' : '#a1a1aa',
           cursor: isOwnPost ? 'default' : 'pointer',
-          opacity: isOwnPost ? 0.4 : 1,
-          border: displayTotal > 0 ? '1px solid rgba(251,191,36,0.2)' : '1px solid transparent',
+          opacity: loading ? 0.5 : (isOwnPost ? 0.7 : 1),
+          border: tipTotalCents > 0 ? '1px solid rgba(251,191,36,0.2)' : '1px solid transparent',
         }}
-        title={isOwnPost ? "Can't tip your own post" : 'Light it up!'}
+        title={isOwnPost ? 'Your earnings' : 'Send a tip!'}
       >
-        <span className={success ? 'animate-bounce' : ''}>🔥</span>
+        <span>🔥</span>
         <span className="text-xs font-semibold">
-          ${(displayTotal / 100).toFixed(0) || '0'}
+          ${Math.floor(tipTotalCents / 100)}
         </span>
       </button>
 
-      {/* Preset selector popup - FIXED positioning */}
-      {showPresets && (
+      {/* Payment modal */}
+      {showModal && paymentInfo && (
         <>
-          {/* Backdrop */}
           <div
-            className="fixed inset-0 z-40 bg-black/50"
-            onClick={() => setShowPresets(false)}
+            className="fixed inset-0 z-40 bg-black/60"
+            onClick={() => setShowModal(false)}
           />
-          {/* Popup - centered on screen for mobile */}
           <div
-            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 flex flex-col gap-3 p-4 rounded-2xl"
+            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[300px] p-5 rounded-2xl"
             style={{
               background: 'rgba(24,24,27,0.98)',
               border: '1px solid rgba(251,191,36,0.3)',
-              backdropFilter: 'blur(12px)',
               boxShadow: '0 8px 32px rgba(0,0,0,0.7)',
-              minWidth: '280px',
             }}
           >
-            <p className="text-center text-amber-400 text-sm font-medium">🔥 Light It Up!</p>
-            <div className="flex flex-wrap justify-center gap-2">
-              {TIP_PRESETS.map((amount) => (
+            <p className="text-center text-amber-400 font-medium mb-4">🔥 Light It Up!</p>
+            
+            {/* Amount selection */}
+            <div className="flex justify-center gap-2 mb-4">
+              {TIP_AMOUNTS.map((amount) => (
                 <button
                   key={amount}
-                  onClick={() => handleTip(amount)}
-                  disabled={processing}
-                  className="px-4 py-2 rounded-xl text-sm font-bold transition-all duration-150"
+                  onClick={() => {
+                    // Store selected amount for payment buttons
+                    const modal = document.getElementById('selected-amount');
+                    if (modal) modal.dataset.amount = String(amount);
+                    // Highlight selected
+                    document.querySelectorAll('[data-tip-amount]').forEach(el => {
+                      (el as HTMLElement).style.background = 'rgba(251,191,36,0.1)';
+                    });
+                    const selected = document.querySelector(`[data-tip-amount="${amount}"]`) as HTMLElement;
+                    if (selected) selected.style.background = 'rgba(251,191,36,0.3)';
+                  }}
+                  data-tip-amount={amount}
+                  className="px-4 py-2 rounded-xl text-sm font-bold"
                   style={{
-                    background: processing
-                      ? 'rgba(63,63,70,0.5)'
-                      : 'rgba(251,191,36,0.15)',
-                    color: processing ? '#52525b' : '#fbbf24',
+                    background: amount === 200 ? 'rgba(251,191,36,0.3)' : 'rgba(251,191,36,0.1)',
+                    color: '#fbbf24',
                     border: '1px solid rgba(251,191,36,0.3)',
-                    cursor: processing ? 'not-allowed' : 'pointer',
                   }}
                 >
-                  {processing ? '...' : formatCents(amount)}
+                  {formatCents(amount)}
                 </button>
               ))}
             </div>
+            
+            <div id="selected-amount" data-amount="200" />
+            
+            {/* Payment buttons */}
+            <div className="space-y-2">
+              {paymentInfo.venmo && (
+                <button
+                  onClick={() => {
+                    const amount = parseInt(document.getElementById('selected-amount')?.dataset.amount || '200');
+                    openPayment('venmo', amount);
+                  }}
+                  className="w-full py-3 rounded-xl font-semibold flex items-center justify-center gap-2"
+                  style={{ background: '#008CFF', color: '#fff' }}
+                >
+                  <span>💳</span> Pay with Venmo
+                </button>
+              )}
+              
+              {paymentInfo.paypal && (
+                <button
+                  onClick={() => {
+                    const amount = parseInt(document.getElementById('selected-amount')?.dataset.amount || '200');
+                    openPayment('paypal', amount);
+                  }}
+                  className="w-full py-3 rounded-xl font-semibold flex items-center justify-center gap-2"
+                  style={{ background: '#003087', color: '#fff' }}
+                >
+                  <span>🅿️</span> Pay with PayPal
+                </button>
+              )}
+            </div>
+            
             <button
-              onClick={() => setShowPresets(false)}
-              className="text-zinc-500 text-xs mt-1"
+              onClick={() => setShowModal(false)}
+              className="w-full mt-3 text-zinc-500 text-sm"
             >
               Cancel
             </button>
@@ -168,33 +202,17 @@ export function TipButton({
         </>
       )}
 
-      {/* Toast - fixed position */}
-      {error && (
+      {/* Toast */}
+      {toast && (
         <div
           className="fixed top-20 left-1/2 -translate-x-1/2 px-4 py-2 rounded-lg text-sm z-[100]"
           style={{
-            background: error.includes('earned') || error.includes('Share') 
-              ? 'rgba(251,191,36,0.95)' 
-              : 'rgba(239,68,68,0.95)',
+            background: toast.includes('🔥') ? 'rgba(251,191,36,0.95)' : 'rgba(239,68,68,0.95)',
             color: '#fff',
             boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
           }}
         >
-          {error}
-        </div>
-      )}
-
-      {/* Success toast - fixed position */}
-      {success && (
-        <div
-          className="fixed top-20 left-1/2 -translate-x-1/2 px-4 py-2 rounded-lg text-sm z-[100]"
-          style={{
-            background: 'rgba(34,197,94,0.95)',
-            color: '#fff',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
-          }}
-        >
-          🔥 Lit!
+          {toast}
         </div>
       )}
     </div>
