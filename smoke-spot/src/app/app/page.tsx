@@ -250,13 +250,46 @@ export default function SplitScreenPage() {
             onMapClick={(clickLat, clickLng) => setPendingSpot({ lat: clickLat, lng: clickLng })}
           />
         )}
-        {/* Tap to add hint */}
-        <div className="absolute top-3 right-3 z-10 bg-zinc-900/80 text-white px-3 py-2 rounded-lg text-xs">
-          👆 Tap map to add spot
+        {/* Search bar */}
+        <div className="absolute top-3 left-3 right-3 z-10 flex gap-2">
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              const input = (e.target as HTMLFormElement).querySelector('input') as HTMLInputElement;
+              const query = input?.value;
+              if (!query) return;
+              
+              input.disabled = true;
+              try {
+                const res = await fetch(`/api/geocode?q=${encodeURIComponent(query)}`);
+                const data = await res.json();
+                if (data.lat && data.lng) {
+                  localStorage.setItem('manualLocation', JSON.stringify({ lat: data.lat, lng: data.lng }));
+                  window.location.reload();
+                }
+              } catch (err) {
+                console.error('Search failed:', err);
+              }
+              input.disabled = false;
+            }}
+            className="flex-1 flex gap-1"
+          >
+            <input
+              type="text"
+              placeholder="🔍 Search location..."
+              className="flex-1 px-3 py-2 bg-zinc-900/90 border border-zinc-700 rounded-lg text-white text-sm placeholder-zinc-500 backdrop-blur-sm"
+            />
+            <button
+              type="submit"
+              className="px-3 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium"
+            >
+              Go
+            </button>
+          </form>
         </div>
         {/* Spot count indicator */}
         {spots.length > 0 && (
-          <div className="absolute top-3 left-3 z-10 bg-zinc-900/80 text-white px-2 py-1 rounded text-xs">
+          <div className="absolute bottom-3 left-3 z-10 bg-zinc-900/80 text-white px-2 py-1 rounded text-xs">
             📍 {spots.length} spots nearby
           </div>
         )}
