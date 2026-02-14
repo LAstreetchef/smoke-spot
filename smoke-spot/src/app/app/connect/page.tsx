@@ -1,8 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useSearchParams } from 'next/navigation';
+
+// Wrapper component for searchParams
+function ConnectContent() {
 
 interface ConnectStatus {
   connected: boolean;
@@ -175,5 +178,18 @@ export default function ConnectPage() {
         Powered by Stripe. We never see your bank details.
       </p>
     </div>
+  );
+}
+
+// Main export with Suspense for useSearchParams
+export default function ConnectPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    }>
+      <ConnectContent />
+    </Suspense>
   );
 }
