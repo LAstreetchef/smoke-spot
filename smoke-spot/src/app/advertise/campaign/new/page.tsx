@@ -10,10 +10,10 @@ import { useToast } from '@/components/Toast'
 const libraries: ("places")[] = ['places']
 
 const AD_TYPES = [
-  { value: 'sponsored_pin', label: 'Sponsored Pin', description: 'Your business appears as a highlighted pin', cpm: 500, emoji: '📍' },
-  { value: 'featured_spot', label: 'Featured Spot', description: 'Appear at top of search results', cpm: 1000, emoji: '⭐' },
-  { value: 'banner', label: 'Banner Ad', description: 'Full-width banner on the map', cpm: 800, emoji: '🖼️' },
-  { value: 'fire_sale', label: '🔥 Fire Sale', description: 'Flash popup deal - BOGO, freebies, limited time!', cpm: 1500, emoji: '🔥' },
+  { value: 'sponsored_pin', label: 'Sponsored Pin', description: 'Your business appears as a highlighted pin', cpm: 2000, emoji: '📍' },
+  { value: 'featured_spot', label: 'Featured Spot', description: 'Appear at top of search results', cpm: 4000, emoji: '⭐' },
+  { value: 'banner', label: 'Banner Ad', description: 'Full-width banner on the map', cpm: 1500, emoji: '🖼️' },
+  { value: 'fire_sale', label: '🔥 Fire Sale', description: 'Flash popup deal - BOGO, freebies, limited time!', cpm: 3000, emoji: '🔥' },
 ]
 
 const BUDGET_OPTIONS = [

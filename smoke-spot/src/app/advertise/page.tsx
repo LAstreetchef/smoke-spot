@@ -126,7 +126,7 @@ export default function AdvertiseLandingPage() {
               <div className="text-3xl mb-3">📍</div>
               <h3 className="font-display text-lg font-bold text-neutral mb-2">Sponsored Pin</h3>
               <p className="text-neutral/60 text-sm mb-4">Your business appears as a highlighted pin on the map</p>
-              <p className="text-2xl font-bold text-accent">$5<span className="text-sm text-neutral/50">/1000 views</span></p>
+              <p className="text-2xl font-bold text-accent">$20<span className="text-sm text-neutral/50">/1000 views</span></p>
             </div>
 
             {/* Featured Spot */}
@@ -137,7 +137,7 @@ export default function AdvertiseLandingPage() {
               <div className="text-3xl mb-3">⭐</div>
               <h3 className="font-display text-lg font-bold text-neutral mb-2">Featured Spot</h3>
               <p className="text-neutral/60 text-sm mb-4">Appear at the top of search results in your area</p>
-              <p className="text-2xl font-bold text-accent">$10<span className="text-sm text-neutral/50">/1000 views</span></p>
+              <p className="text-2xl font-bold text-accent">$40<span className="text-sm text-neutral/50">/1000 views</span></p>
             </div>
 
             {/* Banner Ad */}
@@ -145,7 +145,7 @@ export default function AdvertiseLandingPage() {
               <div className="text-3xl mb-3">🖼️</div>
               <h3 className="font-display text-lg font-bold text-neutral mb-2">Banner Ad</h3>
               <p className="text-neutral/60 text-sm mb-4">Full-width banner shown to users in your target area</p>
-              <p className="text-2xl font-bold text-accent">$8<span className="text-sm text-neutral/50">/1000 views</span></p>
+              <p className="text-2xl font-bold text-accent">$15<span className="text-sm text-neutral/50">/1000 views</span></p>
             </div>
           </div>
 
