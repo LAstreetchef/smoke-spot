@@ -284,6 +284,9 @@ export default function SplitScreenPage() {
               📍 {spots.length} spot{spots.length !== 1 ? 's' : ''} nearby
             </div>
           )}
+          <div className="bg-black/40 text-white/60 px-2 py-0.5 rounded-full text-xs backdrop-blur-md w-fit">
+            👆 Tap map to add spot
+          </div>
         </div>
       </div>
 
