@@ -164,9 +164,9 @@ export default function SplitScreenPage() {
   }
 
   return (
-    <div className="h-screen flex flex-col md:flex-row bg-zinc-900">
-      {/* Map Panel - top 2/3 on mobile, left 2/3 on desktop */}
-      <div className="h-[60vh] md:h-full md:w-2/3 relative">
+    <div className="min-h-screen h-[100dvh] flex flex-col md:flex-row bg-zinc-900 overflow-hidden">
+      {/* Map Panel - top portion on mobile, left 2/3 on desktop */}
+      <div className="h-[55dvh] md:h-full md:w-2/3 relative shrink-0">
         {lat && lng && (
           <Map
             initialCenter={{ lat, lng }}
@@ -187,8 +187,8 @@ export default function SplitScreenPage() {
         )}
       </div>
 
-      {/* Feed Panel - bottom 1/3 on mobile, right 1/3 on desktop */}
-      <div className="flex-1 md:w-1/3 flex flex-col border-t md:border-t-0 md:border-l border-zinc-800 bg-zinc-900 overflow-hidden">
+      {/* Feed Panel - bottom portion on mobile, right 1/3 on desktop */}
+      <div className="flex-1 md:w-1/3 flex flex-col border-t md:border-t-0 md:border-l border-zinc-800 bg-zinc-900 min-h-0">
         {/* Feed Header */}
         <div className="p-3 border-b border-zinc-800 shrink-0">
           <div className="flex items-center justify-between mb-2">

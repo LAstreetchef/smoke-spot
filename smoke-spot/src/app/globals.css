@@ -8,9 +8,36 @@
   --success: #4ADE80;
 }
 
-body {
+html, body {
   background: var(--primary);
   color: var(--neutral);
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Mobile viewport fix */
+html {
+  height: -webkit-fill-available;
+}
+
+body {
+  min-height: 100vh;
+  min-height: -webkit-fill-available;
+  position: relative;
+}
+
+/* Prevent bounce/rubber-band on iOS */
+body.no-bounce {
+  overscroll-behavior: none;
+}
+
+/* Fix for iOS safe areas */
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.safe-top {
+  padding-top: env(safe-area-inset-top);
 }
 
 /* Custom scrollbar */
