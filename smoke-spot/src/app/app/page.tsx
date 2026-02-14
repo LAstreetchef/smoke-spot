@@ -93,7 +93,7 @@ export default function SplitScreenPage() {
     const supabase = createClient();
     try {
       const { data } = await supabase
-        .from('spots')
+        .from('smoke_spots')
         .select('*')
         .gte('latitude', lat - 0.5)
         .lte('latitude', lat + 0.5)
