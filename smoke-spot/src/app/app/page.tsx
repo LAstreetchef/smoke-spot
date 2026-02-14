@@ -136,24 +136,48 @@ export default function SplitScreenPage() {
     return () => clearInterval(interval);
   }, [loadPosts]);
 
-  // Check if user needs to set up payment info
+  // Check if user needs to set up payment info (also ensures profile exists)
   useEffect(() => {
-    async function checkPaymentSetup() {
+    async function ensureProfileAndCheckPayment() {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('users')
         .select('venmo_username, paypal_email')
         .eq('id', user.id)
         .single();
       
+      // If no profile exists, create one
+      if (error?.code === 'PGRST116' || !data) {
+        const generateCode = () => {
+          const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+          let code = '';
+          for (let i = 0; i < 8; i++) {
+            code += chars[Math.floor(Math.random() * chars.length)];
+          }
+          return code;
+        };
+        
+        const username = user.email?.split('@')[0]?.replace(/[^a-zA-Z0-9_]/g, '_') + '_' + Math.random().toString(36).slice(2, 8);
+        
+        await supabase.from('users').insert({
+          id: user.id,
+          email: user.email!,
+          username,
+          referral_code: generateCode(),
+        });
+        
+        setNeedsPaymentSetup(true);
+        return;
+      }
+      
       if (data && !data.venmo_username && !data.paypal_email) {
         setNeedsPaymentSetup(true);
       }
     }
-    checkPaymentSetup();
+    ensureProfileAndCheckPayment();
   }, []);
 
   // Loading state
