@@ -131,6 +131,23 @@ export function FeedCard({ post, onVote, showDistance = true }: FeedCardProps) {
           💬 {post.comment_count}
         </button>
 
+        {/* Share button */}
+        <button
+          onClick={() => {
+            const url = `${window.location.origin}/app?post=${post.id}`;
+            if (navigator.share) {
+              navigator.share({ title: 'Check this out on Smoke Spot', url });
+            } else {
+              navigator.clipboard.writeText(url);
+              alert('Link copied!');
+            }
+          }}
+          className="text-zinc-500 hover:text-white text-sm transition"
+          title="Share post"
+        >
+          📤
+        </button>
+
         {/* Tip Button - Light It Up! 🔥 */}
         <TipButton
           postId={post.id}

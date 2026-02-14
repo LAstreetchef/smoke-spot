@@ -38,9 +38,9 @@ export function TipButton({
   async function handleClick() {
     if (isOwnPost) {
       if (tipTotalCents > 0) {
-        setToast(`🔥 You've received ${formatCents(tipTotalCents)} in tips!`);
+        setToast(`🔥 You've earned ${formatCents(tipTotalCents)} in tips!`);
       } else {
-        setToast('Share great posts to receive tips!');
+        setToast('Your post — others can tip you here');
       }
       setTimeout(() => setToast(null), 3000);
       return;
