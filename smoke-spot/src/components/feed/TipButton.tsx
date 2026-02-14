@@ -12,6 +12,7 @@ interface TipButtonProps {
   currentUserId: string | null;
   tipCount: number;
   tipTotalCents: number;
+  onTipSuccess?: () => void;
 }
 
 interface PaymentInfo {
