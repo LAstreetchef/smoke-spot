@@ -250,8 +250,8 @@ export default function SplitScreenPage() {
             onMapClick={(clickLat, clickLng) => setPendingSpot({ lat: clickLat, lng: clickLng })}
           />
         )}
-        {/* Search bar - compact and transparent */}
-        <div className="absolute top-2 left-2 z-10">
+        {/* Search bar + spot count - compact and transparent */}
+        <div className="absolute top-2 left-2 z-10 flex flex-col gap-1">
           <form
             onSubmit={async (e) => {
               e.preventDefault();
@@ -272,7 +272,6 @@ export default function SplitScreenPage() {
               }
               input.disabled = false;
             }}
-            className="flex gap-1"
           >
             <input
               type="text"
@@ -280,13 +279,12 @@ export default function SplitScreenPage() {
               className="w-32 focus:w-48 transition-all px-2 py-1 bg-black/40 border border-white/20 rounded-full text-white text-xs placeholder-white/60 backdrop-blur-md focus:bg-black/60"
             />
           </form>
+          {spots.length > 0 && (
+            <div className="bg-black/40 text-white/80 px-2 py-0.5 rounded-full text-xs backdrop-blur-md w-fit">
+              📍 {spots.length} spot{spots.length !== 1 ? 's' : ''} nearby
+            </div>
+          )}
         </div>
-        {/* Spot count indicator */}
-        {spots.length > 0 && (
-          <div className="absolute bottom-3 left-3 z-10 bg-zinc-900/80 text-white px-2 py-1 rounded text-xs">
-            📍 {spots.length} spots nearby
-          </div>
-        )}
       </div>
 
       {/* Feed Panel - bottom portion on mobile, right 1/3 on desktop */}
