@@ -168,19 +168,57 @@ export default function SplitScreenPage() {
     );
   }
 
-  // Error state
-  if (geoError) {
+  // Error state - allow manual location entry
+  if (geoError && !lat) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-zinc-900">
-        <div className="text-center space-y-3 max-w-sm">
+        <div className="text-center space-y-4 max-w-sm px-4">
           <p className="text-red-400 text-sm">📍 Location access needed</p>
           <p className="text-zinc-500 text-xs">{geoError}</p>
           <button
             onClick={refreshGeo}
-            className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm hover:bg-emerald-500 transition"
+            className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm hover:bg-emerald-500 transition w-full"
           >
             Try Again
           </button>
+          <div className="text-zinc-600 text-xs">— or —</div>
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              const input = (e.target as HTMLFormElement).querySelector('input');
+              const query = input?.value;
+              if (!query) return;
+              
+              // Use a geocoding API to convert address to coordinates
+              try {
+                const res = await fetch(
+                  `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(query)}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`
+                );
+                const data = await res.json();
+                if (data.results?.[0]?.geometry?.location) {
+                  const { lat: newLat, lng: newLng } = data.results[0].geometry.location;
+                  // Store in localStorage and reload
+                  localStorage.setItem('manualLocation', JSON.stringify({ lat: newLat, lng: newLng }));
+                  window.location.reload();
+                }
+              } catch (err) {
+                console.error('Geocoding failed:', err);
+              }
+            }}
+            className="space-y-2"
+          >
+            <input
+              type="text"
+              placeholder="Enter city or zip code"
+              className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm placeholder-zinc-500"
+            />
+            <button
+              type="submit"
+              className="px-4 py-2 bg-zinc-700 text-white rounded-lg text-sm hover:bg-zinc-600 transition w-full"
+            >
+              Search Location
+            </button>
+          </form>
         </div>
       </div>
     );

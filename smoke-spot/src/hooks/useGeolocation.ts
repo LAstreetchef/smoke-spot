@@ -47,6 +47,15 @@ export function useGeolocation() {
   }, []);
 
   useEffect(() => {
+    // Check for manual location first
+    const stored = localStorage.getItem('manualLocation');
+    if (stored) {
+      try {
+        const { lat, lng } = JSON.parse(stored);
+        setState({ lat, lng, error: null, loading: false });
+        return;
+      } catch {}
+    }
     requestLocation();
   }, [requestLocation]);
 
