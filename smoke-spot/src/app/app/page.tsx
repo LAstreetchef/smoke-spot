@@ -250,8 +250,8 @@ export default function SplitScreenPage() {
             onMapClick={(clickLat, clickLng) => setPendingSpot({ lat: clickLat, lng: clickLng })}
           />
         )}
-        {/* Search bar */}
-        <div className="absolute top-3 left-3 right-3 z-10 flex gap-2">
+        {/* Search bar - compact and transparent */}
+        <div className="absolute top-2 left-2 z-10">
           <form
             onSubmit={async (e) => {
               e.preventDefault();
@@ -272,19 +272,13 @@ export default function SplitScreenPage() {
               }
               input.disabled = false;
             }}
-            className="flex-1 flex gap-1"
+            className="flex gap-1"
           >
             <input
               type="text"
-              placeholder="🔍 Search location..."
-              className="flex-1 px-3 py-2 bg-zinc-900/90 border border-zinc-700 rounded-lg text-white text-sm placeholder-zinc-500 backdrop-blur-sm"
+              placeholder="🔍 Search..."
+              className="w-32 focus:w-48 transition-all px-2 py-1 bg-black/40 border border-white/20 rounded-full text-white text-xs placeholder-white/60 backdrop-blur-md focus:bg-black/60"
             />
-            <button
-              type="submit"
-              className="px-3 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium"
-            >
-              Go
-            </button>
           </form>
         </div>
         {/* Spot count indicator */}
