@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useState, useRef, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { GoogleMap, useJsApiLoader, Marker, InfoWindow } from '@react-google-maps/api'
 
 // IMPORTANT: Keep libraries array outside component to prevent reloading
@@ -67,6 +68,7 @@ export default function GoogleMapComponent({
     libraries: GOOGLE_MAPS_LIBRARIES,
   })
 
+  const router = useRouter()
   const [mapType, setMapType] = useState<google.maps.MapTypeId | string>('hybrid')
   const [selectedSpot, setSelectedSpot] = useState<Spot | null>(null)
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null)
@@ -229,6 +231,12 @@ export default function GoogleMapComponent({
                 {selectedSpot.is_sponsored && (
                   <p className="text-xs text-pink-600 mt-1">Sponsored</p>
                 )}
+                <button
+                  onClick={() => router.push(`/app/spot/${selectedSpot.id}`)}
+                  className="mt-2 w-full py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium rounded-lg transition"
+                >
+                  View Spot →
+                </button>
               </div>
             </div>
           </InfoWindow>
