@@ -338,11 +338,36 @@ export default function ProfilePage() {
             )}
           </div>
 
-          {/* PayPal / Venmo */}
-          <div className="bg-white/5 border border-white/10 rounded-xl p-4 mt-4">
-            <p className="text-sm text-white/60 mb-3">Alternative Payout Methods</p>
+          {/* PayPal / Venmo - Receive Tips */}
+          <div className={`border rounded-xl p-4 mt-4 ${
+            !profile.paypal_email && !profile.venmo_username 
+              ? 'bg-amber-500/10 border-amber-500/30' 
+              : 'bg-white/5 border-white/10'
+          }`}>
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-sm font-medium text-white">🔥 Receive Tips</p>
+              {!profile.paypal_email && !profile.venmo_username && (
+                <span className="text-xs bg-amber-500/20 text-amber-400 px-2 py-1 rounded-full">Setup Required</span>
+              )}
+            </div>
+            {!profile.paypal_email && !profile.venmo_username && !editing && (
+              <p className="text-amber-400/80 text-sm mb-3">Add your Venmo or PayPal to receive tips from your posts!</p>
+            )}
             {editing ? (
               <div className="space-y-3">
+                <div>
+                  <label className="text-xs text-white/40 mb-1 block">Venmo Username (preferred)</label>
+                  <div className="flex items-center gap-2">
+                    <span className="text-blue-400">📱</span>
+                    <input
+                      type="text"
+                      value={venmoUsername}
+                      onChange={(e) => setVenmoUsername(e.target.value)}
+                      placeholder="@YourUsername"
+                      className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+                    />
+                  </div>
+                </div>
                 <div>
                   <label className="text-xs text-white/40 mb-1 block">PayPal Email</label>
                   <div className="flex items-center gap-2">
@@ -356,32 +381,27 @@ export default function ProfilePage() {
                     />
                   </div>
                 </div>
-                <div>
-                  <label className="text-xs text-white/40 mb-1 block">Venmo Username</label>
-                  <div className="flex items-center gap-2">
-                    <span className="text-blue-400">📱</span>
-                    <input
-                      type="text"
-                      value={venmoUsername}
-                      onChange={(e) => setVenmoUsername(e.target.value)}
-                      placeholder="@username"
-                      className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
-                    />
-                  </div>
-                </div>
               </div>
             ) : (
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <span className="text-blue-400">💰</span>
-                  <span className="text-sm text-white/60">PayPal:</span>
-                  <span className="text-sm">{profile.paypal_email || 'Not set'}</span>
-                </div>
-                <div className="flex items-center gap-2">
                   <span className="text-blue-400">📱</span>
                   <span className="text-sm text-white/60">Venmo:</span>
-                  <span className="text-sm">{profile.venmo_username || 'Not set'}</span>
+                  <span className="text-sm">{profile.venmo_username || <span className="text-white/40">Not set</span>}</span>
                 </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-blue-400">💰</span>
+                  <span className="text-sm text-white/60">PayPal:</span>
+                  <span className="text-sm">{profile.paypal_email || <span className="text-white/40">Not set</span>}</span>
+                </div>
+                {!profile.paypal_email && !profile.venmo_username && (
+                  <button
+                    onClick={() => setEditing(true)}
+                    className="w-full mt-3 py-2 bg-amber-500 hover:bg-amber-600 text-black font-medium rounded-lg transition-colors"
+                  >
+                    💰 Set Up Payments Now
+                  </button>
+                )}
               </div>
             )}
           </div>
