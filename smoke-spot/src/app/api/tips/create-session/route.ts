@@ -53,8 +53,20 @@ export async function POST(req: NextRequest) {
     // Get the origin from the request
     const origin = req.headers.get('origin') || 'https://findsmokespot.com';
 
+    // Check if recipient has Stripe Connect
+    const { data: recipientData } = await supabase
+      .from('users')
+      .select('stripe_account_id')
+      .eq('id', post.user_id)
+      .single();
+
+    const recipientStripeId = recipientData?.stripe_account_id;
+
+    // Calculate platform fee (10%)
+    const platformFee = Math.round(amount_cents * 0.10);
+
     // Create Checkout Session
-    const session = await stripe.checkout.sessions.create({
+    const sessionConfig: any = {
       mode: 'payment',
       payment_method_types: ['card'],
       line_items: [
@@ -78,7 +90,19 @@ export async function POST(req: NextRequest) {
       },
       success_url: `${origin}/app?tip_success=true&post=${post_id}`,
       cancel_url: `${origin}/app?tip_cancelled=true`,
-    });
+    };
+
+    // If recipient has Stripe Connect, send payment directly to them
+    if (recipientStripeId) {
+      sessionConfig.payment_intent_data = {
+        application_fee_amount: platformFee,
+        transfer_data: {
+          destination: recipientStripeId,
+        },
+      };
+    }
+
+    const session = await stripe.checkout.sessions.create(sessionConfig);
 
     return NextResponse.json({ url: session.url });
   } catch (err) {
