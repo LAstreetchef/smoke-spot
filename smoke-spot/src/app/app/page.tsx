@@ -64,6 +64,9 @@ export default function SplitScreenPage() {
   
   // Add spot state
   const [pendingSpot, setPendingSpot] = useState<{ lat: number; lng: number } | null>(null);
+  
+  // Payment setup nudge
+  const [needsPaymentSetup, setNeedsPaymentSetup] = useState(false);
 
   // Load feed posts
   const loadPosts = useCallback(async () => {
@@ -133,6 +136,26 @@ export default function SplitScreenPage() {
     return () => clearInterval(interval);
   }, [loadPosts]);
 
+  // Check if user needs to set up payment info
+  useEffect(() => {
+    async function checkPaymentSetup() {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      
+      const { data } = await supabase
+        .from('users')
+        .select('venmo_username, paypal_email')
+        .eq('id', user.id)
+        .single();
+      
+      if (data && !data.venmo_username && !data.paypal_email) {
+        setNeedsPaymentSetup(true);
+      }
+    }
+    checkPaymentSetup();
+  }, []);
+
   // Loading state
   if (geoLoading) {
     return (
@@ -189,6 +212,18 @@ export default function SplitScreenPage() {
 
       {/* Feed Panel - bottom portion on mobile, right 1/3 on desktop */}
       <div className="flex-1 md:w-1/3 flex flex-col border-t md:border-t-0 md:border-l border-zinc-800 bg-zinc-900 min-h-0">
+        {/* Payment Setup Nudge */}
+        {needsPaymentSetup && (
+          <a
+            href="/app/profile"
+            className="block p-2 bg-amber-500/20 border-b border-amber-500/30 text-center"
+          >
+            <p className="text-amber-400 text-xs">
+              💰 Add Venmo/PayPal to receive tips → <span className="underline">Set up now</span>
+            </p>
+          </a>
+        )}
+
         {/* Feed Header */}
         <div className="p-3 border-b border-zinc-800 shrink-0">
           <div className="flex items-center justify-between mb-2">
