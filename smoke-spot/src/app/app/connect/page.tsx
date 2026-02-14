@@ -4,9 +4,6 @@ import { useState, useEffect, Suspense } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useSearchParams } from 'next/navigation';
 
-// Wrapper component for searchParams
-function ConnectContent() {
-
 interface ConnectStatus {
   connected: boolean;
   charges_enabled?: boolean;
@@ -15,7 +12,7 @@ interface ConnectStatus {
   message?: string;
 }
 
-export default function ConnectPage() {
+function ConnectContent() {
   const [status, setStatus] = useState<ConnectStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [connecting, setConnecting] = useState(false);
@@ -87,13 +84,13 @@ export default function ConnectPage() {
 
       {success && (
         <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
-          <p className="text-emerald-400 text-sm">✅ Stripe account connected successfully!</p>
+          <p className="text-emerald-400 text-sm">✅ Stripe account connected!</p>
         </div>
       )}
 
       {refresh && (
         <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20">
-          <p className="text-amber-400 text-sm">Please complete your Stripe setup to receive tips.</p>
+          <p className="text-amber-400 text-sm">Please complete your Stripe setup.</p>
         </div>
       )}
 
@@ -107,24 +104,20 @@ export default function ConnectPage() {
         {isFullyConnected ? (
           <>
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-emerald-500/20 flex items-center justify-center">
-                <span className="text-2xl">✓</span>
-              </div>
+              <div className="w-12 h-12 rounded-full bg-emerald-500/20 flex items-center justify-center text-2xl">✓</div>
               <div>
                 <p className="text-white font-medium">Stripe Connected</p>
                 <p className="text-zinc-500 text-xs">Tips go directly to your bank</p>
               </div>
             </div>
             <p className="text-zinc-400 text-sm">
-              You're all set! When someone tips your posts, the money goes straight to your connected bank account (minus a small platform fee).
+              You&apos;re all set! Tips go straight to your bank (minus 10% platform fee).
             </p>
           </>
         ) : status?.connected && !status?.details_submitted ? (
           <>
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-amber-500/20 flex items-center justify-center">
-                <span className="text-2xl">⏳</span>
-              </div>
+              <div className="w-12 h-12 rounded-full bg-amber-500/20 flex items-center justify-center text-2xl">⏳</div>
               <div>
                 <p className="text-white font-medium">Setup Incomplete</p>
                 <p className="text-zinc-500 text-xs">Finish connecting your bank</p>
@@ -133,11 +126,8 @@ export default function ConnectPage() {
             <button
               onClick={handleConnect}
               disabled={connecting}
-              className="w-full py-3 rounded-xl font-semibold transition-all"
-              style={{
-                background: 'rgba(99,102,241,0.8)',
-                color: '#fff',
-              }}
+              className="w-full py-3 rounded-xl font-semibold"
+              style={{ background: 'rgba(99,102,241,0.8)', color: '#fff' }}
             >
               {connecting ? 'Loading...' : 'Complete Setup'}
             </button>
@@ -145,9 +135,7 @@ export default function ConnectPage() {
         ) : (
           <>
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-zinc-700 flex items-center justify-center">
-                <span className="text-2xl">💳</span>
-              </div>
+              <div className="w-12 h-12 rounded-full bg-zinc-700 flex items-center justify-center text-2xl">💳</div>
               <div>
                 <p className="text-white font-medium">Connect Stripe</p>
                 <p className="text-zinc-500 text-xs">Get paid for tips on your posts</p>
@@ -162,11 +150,8 @@ export default function ConnectPage() {
             <button
               onClick={handleConnect}
               disabled={connecting}
-              className="w-full py-3 rounded-xl font-semibold transition-all"
-              style={{
-                background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-                color: '#fff',
-              }}
+              className="w-full py-3 rounded-xl font-semibold"
+              style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', color: '#fff' }}
             >
               {connecting ? 'Loading...' : 'Connect with Stripe'}
             </button>
@@ -181,7 +166,6 @@ export default function ConnectPage() {
   );
 }
 
-// Main export with Suspense for useSearchParams
 export default function ConnectPage() {
   return (
     <Suspense fallback={
