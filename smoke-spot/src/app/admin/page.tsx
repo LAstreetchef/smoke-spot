@@ -3,7 +3,7 @@ import { createClient as createServerClient } from '@/lib/supabase/server'
 import { createClient } from '@supabase/supabase-js'
 import AdminDashboard from './AdminDashboard'
 
-const ADMIN_EMAIL = 'kammiceli@gmail.com'
+const ADMIN_EMAIL = 'message4u@secretmessage4u.com'
 
 export default async function AdminPage() {
   // Service role client - create inside function for proper env access

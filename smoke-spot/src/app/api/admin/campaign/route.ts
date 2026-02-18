@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 
-const ADMIN_EMAIL = 'kammiceli@gmail.com'
+const ADMIN_EMAIL = 'message4u@secretmessage4u.com'
 
 export async function POST(request: NextRequest) {
   // Verify admin
