@@ -1,9 +1,11 @@
-'use client'
-import { useEffect } from 'react'
-
+export const metadata = { title: 'Vibe Check' }
 export default function VibecheckPage() {
-  useEffect(() => {
-    window.location.href = '/vibecheck/index.html'
-  }, [])
-  return null
+  return (
+    <main style={{margin:0,padding:0,overflow:'hidden'}}>
+      <iframe
+        src="https://vibecheck-git-master-smokespot.vercel.app"
+        style={{width:'100vw',height:'100vh',border:'none',display:'block'}}
+      />
+    </main>
+  )
 }
