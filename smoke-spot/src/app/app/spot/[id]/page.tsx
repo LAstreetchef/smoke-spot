@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import ShareSheet from '@/components/ShareSheet'
+import VibesHereNow from '@/components/VibesHereNow'
 import { useToast } from '@/components/Toast'
 import { PostComposer } from '@/components/feed/PostComposer'
 import { FeedCard } from '@/components/feed/FeedCard'
@@ -545,6 +546,9 @@ export default function SpotDetailPage() {
             payloadId={spot.id}
             title={spot.name}
           />
+
+          {/* Vibes Here Now */}
+          <VibesHereNow spotId={spot.id} />
 
           {/* Banner Ad */}
           {bannerAd && (
