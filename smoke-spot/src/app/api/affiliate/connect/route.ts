@@ -2,53 +2,23 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import Stripe from 'stripe'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  maxNetworkRetries: 3,
-  timeout: 30000,
-})
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
-
 // POST: Create Stripe Connect account and return onboarding URL
 export async function POST(request: NextRequest) {
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+    maxNetworkRetries: 3,
+    timeout: 30000,
+  })
+
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+
   try {
     const { userId, email } = await request.json()
 
     if (!userId || !email) {
       return NextResponse.json({ error: 'Missing userId or email' }, { status: 400 })
-    }
-
-    // Debug: Test Stripe connection first
-    const keyPrefix = process.env.STRIPE_SECRET_KEY?.substring(0, 12) || 'NOT_SET'
-    console.log('Stripe key prefix:', keyPrefix)
-    
-    // Test basic Stripe connectivity using fetch directly
-    try {
-      const testResponse = await fetch('https://api.stripe.com/v1/balance', {
-        headers: {
-          'Authorization': `Bearer ${process.env.STRIPE_SECRET_KEY}`,
-        },
-      })
-      const testData = await testResponse.json()
-      if (!testResponse.ok) {
-        return NextResponse.json({ 
-          error: 'Stripe API error',
-          details: testData.error?.message || 'Unknown error',
-          keyPrefix,
-          status: testResponse.status
-        }, { status: 500 })
-      }
-      console.log('Stripe connected via fetch, balance:', testData)
-    } catch (testErr: any) {
-      console.error('Stripe fetch test failed:', testErr.message)
-      return NextResponse.json({ 
-        error: 'Stripe fetch test failed',
-        details: testErr.message,
-        keyPrefix 
-      }, { status: 500 })
     }
 
     // Check if affiliate already exists
@@ -130,6 +100,16 @@ export async function POST(request: NextRequest) {
 
 // GET: Check Stripe Connect account status
 export async function GET(request: NextRequest) {
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+    maxNetworkRetries: 3,
+    timeout: 30000,
+  })
+
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+
   try {
     const { searchParams } = new URL(request.url)
     const userId = searchParams.get('userId')

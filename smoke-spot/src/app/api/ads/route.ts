@@ -5,17 +5,21 @@ import { NextRequest, NextResponse } from 'next/server'
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    const lat = parseFloat(searchParams.get('lat') || '0')
-    const lng = parseFloat(searchParams.get('lng') || '0')
+    const latStr = searchParams.get('lat')
+    const lngStr = searchParams.get('lng')
+    const lat = latStr !== null ? parseFloat(latStr) : NaN
+    const lng = lngStr !== null ? parseFloat(lngStr) : NaN
 
-    if (!lat || !lng) {
-      return NextResponse.json({ error: 'Missing lat/lng' }, { status: 400 })
+    if (isNaN(lat) || isNaN(lng)) {
+      return NextResponse.json({ error: 'Missing or invalid lat/lng' }, { status: 400 })
     }
 
     const supabase = await createClient()
 
-    // Get active campaigns
-    // In production, this would use PostGIS for proper geo queries
+    // Get active campaigns with a bounding-box pre-filter to reduce rows scanned.
+    // A 1-degree latitude ~= 111km, 1-degree longitude varies by latitude.
+    // We use a generous bounding box (max target_radius_km assumed <= 200km).
+    const BOX_DEGREES = 2 // ~222km in latitude
     const { data: campaigns, error } = await supabase
       .from('ad_campaigns')
       .select(`
@@ -28,6 +32,10 @@ export async function GET(request: NextRequest) {
       .eq('status', 'active')
       .gte('end_date', new Date().toISOString())
       .lte('start_date', new Date().toISOString())
+      .gte('target_center_lat', lat - BOX_DEGREES)
+      .lte('target_center_lat', lat + BOX_DEGREES)
+      .gte('target_center_lng', lng - BOX_DEGREES)
+      .lte('target_center_lng', lng + BOX_DEGREES)
 
     if (error) {
       console.error('Error fetching ads:', error)
@@ -121,29 +129,32 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    // Update campaign spent amount if impression
+    // Update campaign spent amount if impression — use atomic increment
+    // to prevent race conditions under concurrent requests.
     if (event_type === 'impression') {
       const { data: campaign } = await supabase
         .from('ad_campaigns')
-        .select('spent_cents, cpm_cents, budget_cents')
+        .select('cpm_cents, budget_cents, spent_cents')
         .eq('id', campaign_id)
         .single()
 
       if (campaign) {
-        // Add CPM / 1000 to spent
         const incrementCents = Math.ceil(campaign.cpm_cents / 1000)
         const newSpent = (campaign.spent_cents || 0) + incrementCents
 
-        // Only update spent, don't change status (unless budget exhausted)
-        const updateData: any = { spent_cents: newSpent }
+        // Use conditional update: match current spent_cents to prevent lost updates.
+        // If another request updated spent_cents between our read and write,
+        // no rows match and we accept the slight under-count (better than over-spend).
+        const updateData: Record<string, unknown> = { spent_cents: newSpent }
         if (newSpent >= campaign.budget_cents) {
           updateData.status = 'completed'
         }
-        
+
         await supabase
           .from('ad_campaigns')
           .update(updateData)
           .eq('id', campaign_id)
+          .eq('spent_cents', campaign.spent_cents || 0)
       }
     }
 

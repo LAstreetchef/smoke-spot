@@ -4,20 +4,20 @@ import { createClient as createServerClient } from '@/lib/supabase/server'
 
 const ADMIN_EMAIL = 'message4u@secretmessage4u.com'
 
-// Service role client bypasses RLS
-const adminSupabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
-
 export async function GET() {
   // Use server client for proper cookie handling
   const supabase = await createServerClient()
   const { data: { user } } = await supabase.auth.getUser()
-  
+
   if (!user || user.email !== ADMIN_EMAIL) {
-    return NextResponse.json({ error: 'Unauthorized', email: user?.email }, { status: 401 })
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
+
+  // Service role client created inside handler, not at module scope
+  const adminSupabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
 
   // Fetch all data with service role (bypasses RLS)
   const [campaignsRes, affiliatesRes, commissionsRes, advertisersRes] = await Promise.all([

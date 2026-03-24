@@ -29,10 +29,9 @@ export default async function AdminPage() {
     adminSupabase.from('commissions').select('*, campaign:ad_campaigns(name)').order('created_at', { ascending: false }).limit(50),
   ])
 
-  // Debug logging
-  console.log('Admin page - campaigns:', campaignsRes.data?.length, campaignsRes.error)
-  console.log('Admin page - affiliates:', affiliatesRes.data?.length, affiliatesRes.error)
-  console.log('Admin page - env check:', !!process.env.SUPABASE_SERVICE_ROLE_KEY)
+  // Debug logging (avoid leaking env info)
+  if (campaignsRes.error) console.error('Campaigns fetch error:', campaignsRes.error)
+  if (affiliatesRes.error) console.error('Affiliates fetch error:', affiliatesRes.error)
 
   // If there's an error, it might be env var issue
   if (campaignsRes.error) {
@@ -62,23 +61,13 @@ export default async function AdminPage() {
 
   const stats = { totalRevenue, totalCommissions, activeAds, totalAffiliates }
 
-  // Pass debug info
-  const debug = {
-    campaignsCount: campaignsRes.data?.length || 0,
-    campaignsError: campaignsRes.error?.message || null,
-    affiliatesCount: affiliatesRes.data?.length || 0,
-    envKeyExists: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
-    supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL?.substring(0, 30) || 'missing'
-  }
-
   return (
-    <AdminDashboard 
+    <AdminDashboard
       campaigns={campaigns}
       affiliates={affiliates}
       commissions={commissions}
       stats={stats}
       userEmail={user.email || ''}
-      debug={debug}
     />
   )
 }

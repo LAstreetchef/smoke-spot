@@ -172,11 +172,47 @@
   </div>
   <div class="tagline">// FIND YOUR FREQUENCY //</div>
   <div style="margin-top:40px; width:100%; max-width:340px;">
-    <button class="btn" onclick="goTo('screen-name')">START SCANNING</button>
+    <button class="btn" onclick="goTo('screen-howto')">START SCANNING</button>
     <button class="btn pink" onclick="goTo('screen-join')">JOIN WITH CODE</button>
   </div>
   <div style="margin-top:30px; font-size:10px; color:rgba(255,255,255,.2); letter-spacing:2px; text-align:center; max-width:300px; line-height:1.8;">
     ANSWER 5 QUESTIONS → GET YOUR VIBE TYPE → FIND WHO'S NEAR YOU
+  </div>
+</div>
+
+<!-- ═══ HOW TO PLAY ═══ -->
+<div class="screen" id="screen-howto">
+  <div style="width:100%; max-width:400px;">
+    <div class="section-title" style="text-align:left; font-size:36px;">HOW TO PLAY</div>
+    <div class="section-sub" style="text-align:left; margin-bottom:24px;">// READ THIS ONCE //</div>
+
+    <div class="panel" style="margin-bottom:10px;">
+      <div class="panel-label">STEP 1</div>
+      <div style="font-family:'Bebas Neue',sans-serif; font-size:22px; color:var(--neon-green); margin-bottom:6px;">GET YOUR VIBE TYPE</div>
+      <div style="font-size:11px; color:rgba(255,255,255,.6); line-height:1.7;">Answer 5 quick questions. You'll be assigned one of 8 vibe types — Signal Boost, Static Flux, Deep Crypt, and more.</div>
+    </div>
+
+    <div class="panel" style="margin-bottom:10px; border-left-color:var(--neon-yellow);">
+      <div class="panel-label" style="color:var(--neon-yellow);">STEP 2</div>
+      <div style="font-family:'Bebas Neue',sans-serif; font-size:22px; color:var(--neon-yellow); margin-bottom:6px;">SHARE YOUR SESSION CODE</div>
+      <div style="font-size:11px; color:rgba(255,255,255,.6); line-height:1.7;">You get a 4-letter code. Share it with people around you — a party, a bar, an event — so everyone joins the same session.</div>
+    </div>
+
+    <div class="panel" style="margin-bottom:10px; border-left-color:var(--neon-cyan);">
+      <div class="panel-label" style="color:var(--neon-cyan);">STEP 3</div>
+      <div style="font-family:'Bebas Neue',sans-serif; font-size:22px; color:var(--neon-cyan); margin-bottom:6px;">SCAN THE ROOM</div>
+      <div style="font-size:11px; color:rgba(255,255,255,.6); line-height:1.7;">Your radar shows everyone in the session with a match %. Green dots = high match. Move toward them physically.</div>
+    </div>
+
+    <div class="panel" style="margin-bottom:20px; border-left-color:var(--neon-pink);">
+      <div class="panel-label" style="color:var(--neon-pink);">STEP 4</div>
+      <div style="font-family:'Bebas Neue',sans-serif; font-size:22px; color:var(--neon-pink); margin-bottom:6px;">PING & CONNECT</div>
+      <div style="font-size:11px; color:rgba(255,255,255,.6); line-height:1.7;">Tap someone in Nearby to ping them. Chat on the local frequency. Earn points. Climb the leaderboard.</div>
+    </div>
+
+    <div style="font-size:10px; color:rgba(255,255,255,.2); letter-spacing:2px; text-align:center; margin-bottom:20px;">NO APP · WORKS ON ANY PHONE · 2 MIN SETUP · FREE</div>
+
+    <button class="btn" onclick="goTo('screen-name')">LET'S GO →</button>
   </div>
 </div>
 
@@ -303,7 +339,7 @@
 <div class="screen" id="screen-join">
   <div class="section-title">JOIN SESSION</div>
   <div class="section-sub">// ENTER A FRIEND'S CODE //</div>
-  <input type="text" class="input-field" id="joinCode" placeholder="4-LETTER CODE" maxlength="4">
+  <input type="text" class="input-field" id="joinCode" placeholder="SESSION CODE" maxlength="6">
   <input type="text" class="input-field" id="joinName" placeholder="YOUR NAME" maxlength="16">
   <div class="error-msg" id="joinError"></div>
   <div class="btn-row">
@@ -456,7 +492,8 @@ function computeVibe() {
   const top = Object.keys(tally).reduce((a,b) => tally[a] >= tally[b] ? a : b);
   state.vibeKey = top;
   state.vibeData = VIBE_TYPES[top];
-  state.sessionCode = Math.random().toString(36).substr(2,4).toUpperCase();
+  // Generate a 6-char session code for lower collision probability
+  state.sessionCode = Math.random().toString(36).substr(2,6).toUpperCase();
 
   const v = state.vibeData;
   document.getElementById('resultEmoji').textContent = v.emoji;
@@ -472,7 +509,7 @@ function computeVibe() {
 function joinSession() {
   const code = document.getElementById('joinCode').value.trim().toUpperCase();
   const name = document.getElementById('joinName').value.trim().toUpperCase();
-  if (!code || code.length < 3) { document.getElementById('joinError').textContent = 'ENTER A VALID CODE'; return; }
+  if (!code || code.length < 4) { document.getElementById('joinError').textContent = 'ENTER A VALID CODE'; return; }
   if (!name) { document.getElementById('joinError').textContent = 'ENTER YOUR NAME'; return; }
   document.getElementById('joinError').textContent = '';
 
@@ -642,7 +679,7 @@ function renderRadarDots() {
     el.innerHTML += `
       <circle cx="${cx}" cy="${cy}" r="5" fill="${color}" opacity=".9"/>
       <circle cx="${cx}" cy="${cy}" r="9" fill="none" stroke="${color}" stroke-opacity=".3" stroke-width="1"/>
-      <text x="${cx+8}" y="${cy-6}" fill="${color}" font-family="VT323,monospace" font-size="12" opacity=".7">${p.vibe_emoji}</text>
+      <text x="${cx+8}" y="${cy-6}" fill="${color}" font-family="VT323,monospace" font-size="12" opacity=".7">${esc(p.vibe_emoji)}</text>
     `;
   });
 }
@@ -662,12 +699,16 @@ async function loadNearby() {
   state.nearbyPlayers.forEach(p => {
     const mc = p.match >= 80 ? 'match-high' : p.match >= 60 ? 'match-mid' : 'match-low';
     const distStr = p.dist !== null ? fmtDist(p.dist) : '?M';
+    const safeId = esc(p.id);
+    const safeName = esc(p.name);
+    const safeEmoji = esc(p.vibe_emoji);
+    const safeVibe = esc(p.vibe_name);
     list.innerHTML += `
-      <div class="nearby-item" onclick="pingPlayer('${p.id}','${p.name}','${p.vibe_emoji}')">
-        <div class="nearby-avatar">${p.vibe_emoji}</div>
+      <div class="nearby-item" onclick="pingPlayer('${safeId}','${safeName}','${safeEmoji}')">
+        <div class="nearby-avatar">${safeEmoji}</div>
         <div class="nearby-info">
-          <div class="nearby-name">${p.name}</div>
-          <div class="nearby-vibe">${p.vibe_name}</div>
+          <div class="nearby-name">${safeName}</div>
+          <div class="nearby-vibe">${safeVibe}</div>
         </div>
         <div class="match-pct ${mc}">${p.match}%</div>
         <div class="dist-badge">${distStr} AWAY</div>
@@ -676,12 +717,21 @@ async function loadNearby() {
 }
 
 // ─── PING ───
+const _pingedPlayers = new Set();
+
 async function pingPlayer(toId, toName, toEmoji) {
+  // Prevent duplicate pings to the same player
+  if (_pingedPlayers.has(toId)) {
+    showPopup(`ALREADY PINGED ${esc(toName)}`);
+    return;
+  }
+  _pingedPlayers.add(toId);
+
   state.matched++;
   state.streak++;
   state.pts += Math.max(10, state.nearbyPlayers.find(p=>p.id===toId)?.match || 50);
   updateStats();
-  showPopup(`⚡ PINGED ${toName} ⚡`);
+  showPopup(`⚡ PINGED ${esc(toName)} ⚡`);
 
   // Update DB
   if (state.playerId) {
@@ -690,7 +740,14 @@ async function pingPlayer(toId, toName, toEmoji) {
   }
 
   // Auto chat message
-  appendChatMsg(toName, toEmoji, `${state.vibeData.emoji} ${state.name} pinged you — say hi!`, false);
+  appendChatMsg(toName, toEmoji, `${state.vibeData.emoji} ${esc(state.name)} pinged you — say hi!`, false);
+}
+
+// ─── HTML ESCAPE (XSS prevention) ───
+function esc(str) {
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
 }
 
 // ─── CHAT ───
@@ -698,7 +755,7 @@ function appendChatMsg(name, emoji, text, isMe) {
   const box = document.getElementById('chatBox');
   const div = document.createElement('div');
   div.className = 'chat-msg ' + (isMe ? 'me' : 'them');
-  div.innerHTML = `<span class="sender">${name} ${emoji}</span><div>${text}</div>`;
+  div.innerHTML = `<span class="sender">${esc(name)} ${esc(emoji)}</span><div>${esc(text)}</div>`;
   box.appendChild(div);
   box.scrollTop = box.scrollHeight;
 }
@@ -750,10 +807,10 @@ async function loadLeaderboard() {
     el.innerHTML = data.map((p, i) => `
       <div class="lb-row">
         <div class="lb-rank ${ranks[i]||''}">${i+1}</div>
-        <div style="font-size:24px;">${p.vibe_emoji}</div>
+        <div style="font-size:24px;">${esc(p.vibe_emoji)}</div>
         <div class="lb-info">
-          <div class="lb-name">${p.name}</div>
-          <div class="lb-sub">${p.vibe_name} · ${p.matched} MATCHES</div>
+          <div class="lb-name">${esc(p.name)}</div>
+          <div class="lb-sub">${esc(p.vibe_name)} · ${p.matched} MATCHES</div>
         </div>
         <div class="lb-score">${p.pts}</div>
       </div>
@@ -772,10 +829,30 @@ function updateStats() {
 
 function showPopup(msg) {
   const el = document.getElementById('matchPopup');
-  el.textContent = msg;
+  el.textContent = msg; // textContent is already XSS-safe
   el.style.display = 'block';
   setTimeout(() => { el.style.display = 'none'; }, 2800);
 }
+
+// Clean up stale player record on page unload
+window.addEventListener('beforeunload', () => {
+  if (state.playerId) {
+    // Use sendBeacon for reliable delivery on page close
+    const url = `${SUPABASE_URL}/rest/v1/vc_players?id=eq.${state.playerId}`;
+    navigator.sendBeacon && fetch(url, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_ANON,
+        'Authorization': `Bearer ${SUPABASE_ANON}`,
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify({ last_seen: new Date(0).toISOString() }),
+      keepalive: true
+    }).catch(() => {});
+  }
+  if (state.locationWatcher) clearInterval(state.locationWatcher);
+});
 
 // Poll for nearby every 20s while on radar tab
 setInterval(() => {
