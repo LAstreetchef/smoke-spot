@@ -23,18 +23,26 @@ export default function VibesHereNow({ spotId }: VibesHereNowProps) {
 
     async function fetchActivePlayers() {
       setLoading(true)
-      const supabase = createClient()
-      const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString()
+      try {
+        const supabase = createClient()
+        const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString()
 
-      const { data } = await supabase
-        .from('vc_players')
-        .select('vibe_key, vibe_name, vibe_emoji')
-        .eq('spot_id', spotId)
-        .gt('last_seen', thirtyMinAgo)
+        const { data, error } = await supabase
+          .from('vc_players')
+          .select('vibe_key, vibe_name, vibe_emoji')
+          .eq('spot_id', spotId)
+          .gt('last_seen', thirtyMinAgo)
 
-      if (!cancelled) {
-        setPlayers(data || [])
-        setLoading(false)
+        if (!cancelled) {
+          setPlayers(error ? [] : (data || []))
+          setLoading(false)
+        }
+      } catch {
+        // If vc_players table or spot_id column doesn't exist yet, fail silently
+        if (!cancelled) {
+          setPlayers([])
+          setLoading(false)
+        }
       }
     }
 

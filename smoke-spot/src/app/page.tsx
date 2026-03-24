@@ -6,19 +6,15 @@ export default function Home() {
       {/* Hero Section */}
       <div className="relative overflow-hidden min-h-screen">
         {/* Background image - mobile uses portrait crop, desktop uses wide */}
-        <div className="absolute inset-0">
-          <picture>
-            <source media="(max-width: 640px)" srcSet="/hero-bg-mobile.png" />
-            <img src="/hero-bg.png" alt="" className="w-full h-full object-cover object-center" />
-          </picture>
-          <div className="absolute inset-0 bg-gradient-to-t from-primary via-primary/50 to-transparent sm:bg-primary/60" />
+        <div className="absolute inset-0 bg-gradient-to-br from-secondary via-primary to-secondary">
+          <div className="absolute inset-0 bg-gradient-to-t from-primary via-primary/50 to-transparent" />
         </div>
         
         {/* Content */}
         <div className="relative max-w-6xl mx-auto px-4 py-20 sm:py-32">
           <nav className="flex justify-between items-center mb-16">
             <div className="flex items-center gap-2">
-              <img src="/logo.png" alt="Smoke Spot" className="w-10 h-10 rounded-lg shadow-lg shadow-accent/30 animate-pulse" />
+              <span className="w-10 h-10 rounded-lg shadow-lg shadow-accent/30 bg-accent flex items-center justify-center text-xl">🚬</span>
               <span className="font-display text-2xl font-bold text-neutral">Smoke Spot</span>
             </div>
             <div className="flex gap-4">

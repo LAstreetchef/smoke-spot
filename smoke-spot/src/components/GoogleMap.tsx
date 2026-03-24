@@ -71,6 +71,22 @@ const containerStyle = {
   height: '100%',
 }
 
+// Inline SVG marker icon — no external file dependency.
+// Smoke-spot pin: green circle with a smoke/leaf symbol.
+const SPOT_MARKER_SVG = `data:image/svg+xml,${encodeURIComponent(`
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+  <circle cx="16" cy="16" r="14" fill="#1A1A2E" stroke="#4ADE80" stroke-width="2"/>
+  <text x="16" y="21" text-anchor="middle" font-size="16">🚬</text>
+</svg>
+`)}`
+
+const SPONSORED_MARKER_SVG = `data:image/svg+xml,${encodeURIComponent(`
+<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40">
+  <circle cx="20" cy="20" r="18" fill="#1A1A2E" stroke="#E94560" stroke-width="2"/>
+  <text x="20" y="26" text-anchor="middle" font-size="20">📍</text>
+</svg>
+`)}`
+
 export default function GoogleMapComponent({
   onBoundsChange,
   onSpotClick,
@@ -95,45 +111,56 @@ export default function GoogleMapComponent({
   const mapRef = useRef<google.maps.Map | null>(null)
   const [vibeMap, setVibeMap] = useState<Record<string, VibeData>>({})
 
-  // Fetch active vibe sessions grouped by spot_id
+  // Fetch active vibe sessions grouped by spot_id.
+  // NOTE: vc_players needs a `spot_id` column (via migration) for this to work.
+  // Until the migration is applied, this gracefully returns an empty map.
   useEffect(() => {
     async function fetchVibeData() {
-      const supabase = createClient()
-      const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString()
+      try {
+        const supabase = createClient()
+        const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString()
 
-      const { data } = await supabase
-        .from('vc_players')
-        .select('spot_id, vibe_key, vibe_emoji')
-        .gt('last_seen', thirtyMinAgo)
+        const { data, error } = await supabase
+          .from('vc_players')
+          .select('spot_id, vibe_key, vibe_emoji')
+          .not('spot_id', 'is', null)
+          .gt('last_seen', thirtyMinAgo)
 
-      if (!data || data.length === 0) {
+        if (error || !data || data.length === 0) {
+          setVibeMap({})
+          return
+        }
+
+        // Group by spot_id, find dominant vibe per spot
+        const grouped: Record<string, { vibe_key: string; vibe_emoji: string }[]> = {}
+        for (const row of data) {
+          if (!row.spot_id) continue
+          if (!grouped[row.spot_id]) grouped[row.spot_id] = []
+          grouped[row.spot_id].push({ vibe_key: row.vibe_key, vibe_emoji: row.vibe_emoji })
+        }
+
+        const result: Record<string, VibeData> = {}
+        for (const [spotId, players] of Object.entries(grouped)) {
+          const counts: Record<string, { count: number; emoji: string }> = {}
+          for (const p of players) {
+            if (!counts[p.vibe_key]) counts[p.vibe_key] = { count: 0, emoji: p.vibe_emoji }
+            counts[p.vibe_key].count++
+          }
+          const dominant = Object.entries(counts).sort((a, b) => b[1].count - a[1].count)[0]
+          if (dominant) {
+            result[spotId] = {
+              count: players.length,
+              dominant_vibe: dominant[0],
+              dominant_emoji: dominant[1].emoji,
+            }
+          }
+        }
+
+        setVibeMap(result)
+      } catch {
+        // If vc_players table or spot_id column doesn't exist yet, fail silently.
         setVibeMap({})
-        return
       }
-
-      // Group by spot_id, find dominant vibe per spot
-      const grouped: Record<string, { vibe_key: string; vibe_emoji: string }[]> = {}
-      for (const row of data) {
-        if (!grouped[row.spot_id]) grouped[row.spot_id] = []
-        grouped[row.spot_id].push({ vibe_key: row.vibe_key, vibe_emoji: row.vibe_emoji })
-      }
-
-      const result: Record<string, VibeData> = {}
-      for (const [spotId, players] of Object.entries(grouped)) {
-        const counts: Record<string, { count: number; emoji: string }> = {}
-        for (const p of players) {
-          if (!counts[p.vibe_key]) counts[p.vibe_key] = { count: 0, emoji: p.vibe_emoji }
-          counts[p.vibe_key].count++
-        }
-        const dominant = Object.entries(counts).sort((a, b) => b[1].count - a[1].count)[0]
-        result[spotId] = {
-          count: players.length,
-          dominant_vibe: dominant[0],
-          dominant_emoji: dominant[1].emoji,
-        }
-      }
-
-      setVibeMap(result)
     }
 
     fetchVibeData()
@@ -261,7 +288,7 @@ export default function GoogleMapComponent({
             position={{ lat: spot.latitude, lng: spot.longitude }}
             onClick={() => handleMarkerClick(spot)}
             icon={{
-              url: '/logo.png',
+              url: spot.is_sponsored ? SPONSORED_MARKER_SVG : SPOT_MARKER_SVG,
               scaledSize: new google.maps.Size(spot.is_sponsored ? 40 : 32, spot.is_sponsored ? 40 : 32),
               anchor: new google.maps.Point(spot.is_sponsored ? 20 : 16, spot.is_sponsored ? 20 : 16),
             }}

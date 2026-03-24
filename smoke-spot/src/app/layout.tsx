@@ -24,10 +24,6 @@ export const metadata: Metadata = {
   title: "Smoke Spot - Find Your Perfect Smoke Spot",
   description: "Discover and share smoking-friendly locations near you. Join the community of smokers finding the best spots.",
   keywords: ["smoking spots", "smoke friendly", "420 friendly", "outdoor smoking", "smoking locations"],
-  icons: {
-    icon: "/favicon.png",
-    apple: "/logo.png",
-  },
 };
 
 export default function RootLayout({
