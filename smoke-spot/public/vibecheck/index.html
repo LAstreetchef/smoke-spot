@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>VIBE CHECK</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Bebas+Neue&family=VT323&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --neon-green: #00ff88;
+    --neon-pink: #ff0080;
+    --neon-yellow: #ffee00;
+    --neon-cyan: #00ffff;
+    --neon-orange: #ff6600;
+    --bg: #080808;
+    --panel: #0f0f0f;
+    --border: #1a1a1a;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body {
+    background: var(--bg); color: #fff;
+    font-family: 'Space Mono', monospace;
+    min-height: 100vh; overflow-x: hidden;
+  }
+  body::before {
+    content:''; position:fixed; inset:0;
+    background: repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,255,136,.015) 2px,rgba(0,255,136,.015) 4px);
+    pointer-events:none; z-index:9999;
+  }
+  .screen { display:none; min-height:100vh; flex-direction:column; align-items:center; justify-content:center; padding:20px; animation:screenIn .3s ease; }
+  .screen.active { display:flex; }
+  @keyframes screenIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+
+  /* LOGO */
+  .logo { font-family:'Bebas Neue',sans-serif; font-size:clamp(72px,22vw,140px); line-height:.85; text-align:center; letter-spacing:-2px; }
+  .logo span.v1 { color:var(--neon-green); }
+  .logo span.v2 { color:transparent; -webkit-text-stroke:2px var(--neon-pink); display:block; }
+  .logo-glitch { position:relative; display:inline-block; }
+  .logo-glitch::before,.logo-glitch::after { content:attr(data-text); position:absolute; top:0; left:0; width:100%; }
+  .logo-glitch::before { color:var(--neon-cyan); clip-path:polygon(0 30%,100% 30%,100% 50%,0 50%); animation:glitch1 3s infinite; }
+  .logo-glitch::after  { color:var(--neon-pink); clip-path:polygon(0 60%,100% 60%,100% 80%,0 80%); animation:glitch2 3s infinite; }
+  @keyframes glitch1 { 0%,90%,100%{transform:translateX(0);opacity:0} 92%{transform:translateX(-4px);opacity:1} 94%{transform:translateX(4px);opacity:1} 96%{transform:translateX(0);opacity:0} }
+  @keyframes glitch2 { 0%,88%,100%{transform:translateX(0);opacity:0} 90%{transform:translateX(4px);opacity:1} 93%{transform:translateX(-4px);opacity:1} 95%{transform:translateX(0);opacity:0} }
+  .tagline { font-family:'VT323',monospace; font-size:clamp(16px,5vw,22px); color:rgba(255,255,255,.5); text-align:center; margin-top:12px; letter-spacing:3px; }
+
+  /* BUTTONS */
+  .btn { display:block; width:100%; max-width:340px; padding:18px 24px; font-family:'Bebas Neue',sans-serif; font-size:26px; letter-spacing:3px; border:2px solid var(--neon-green); background:transparent; color:var(--neon-green); cursor:pointer; position:relative; overflow:hidden; transition:all .15s; margin:6px 0; }
+  .btn::before { content:''; position:absolute; inset:0; background:var(--neon-green); transform:translateY(100%); transition:transform .15s; z-index:-1; }
+  .btn:hover::before,.btn:active::before { transform:translateY(0); }
+  .btn:hover,.btn:active { color:var(--bg); }
+  .btn.pink { border-color:var(--neon-pink); color:var(--neon-pink); }
+  .btn.pink::before { background:var(--neon-pink); }
+  .btn.yellow { border-color:var(--neon-yellow); color:var(--neon-yellow); }
+  .btn.yellow::before { background:var(--neon-yellow); }
+  .btn.cyan { border-color:var(--neon-cyan); color:var(--neon-cyan); }
+  .btn.cyan::before { background:var(--neon-cyan); }
+  .btn-sm { padding:12px 20px; font-size:18px; max-width:200px; margin:4px; display:inline-block; width:auto; }
+  .btn:disabled { opacity:.4; cursor:not-allowed; }
+
+  /* PANELS */
+  .panel { background:var(--panel); border:1px solid var(--border); border-left:3px solid var(--neon-green); padding:20px; width:100%; max-width:400px; margin:10px 0; }
+  .panel-label { font-family:'VT323',monospace; font-size:13px; color:var(--neon-green); letter-spacing:4px; margin-bottom:8px; opacity:.7; }
+
+  /* QUIZ */
+  .question-num { font-family:'VT323',monospace; font-size:14px; letter-spacing:4px; color:var(--neon-yellow); margin-bottom:16px; opacity:.8; }
+  .question-text { font-family:'Bebas Neue',sans-serif; font-size:clamp(28px,8vw,42px); line-height:1.0; color:#fff; margin-bottom:28px; letter-spacing:1px; }
+  .progress-bar { width:100%; max-width:400px; height:3px; background:rgba(255,255,255,.1); margin-bottom:30px; }
+  .progress-fill { height:100%; background:var(--neon-green); transition:width .4s ease; box-shadow:0 0 8px var(--neon-green); }
+  .answer-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; width:100%; max-width:400px; }
+  .answer-btn { padding:16px 12px; border:1px solid rgba(255,255,255,.15); background:var(--panel); color:#fff; font-family:'Space Mono',monospace; font-size:12px; cursor:pointer; text-align:left; line-height:1.4; transition:all .15s; }
+  .answer-btn:hover,.answer-btn:active { border-color:var(--neon-green); background:rgba(0,255,136,.08); color:var(--neon-green); }
+  .answer-btn.selected { border-color:var(--neon-green); background:rgba(0,255,136,.15); color:var(--neon-green); }
+  .answer-btn .letter { font-family:'Bebas Neue',sans-serif; font-size:24px; color:var(--neon-yellow); display:block; margin-bottom:4px; }
+
+  /* VIBE RESULT */
+  .vibe-card { width:100%; max-width:400px; padding:30px 24px; position:relative; border:2px solid var(--neon-green); background:var(--panel); text-align:center; margin:16px 0; }
+  .vibe-card::before { content:''; position:absolute; top:-1px; left:20px; right:20px; height:3px; background:var(--neon-green); box-shadow:0 0 20px var(--neon-green); }
+  .vibe-emoji { font-size:64px; display:block; margin-bottom:10px; animation:float 3s ease-in-out infinite; }
+  @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+  .vibe-type { font-family:'Bebas Neue',sans-serif; font-size:clamp(42px,12vw,64px); line-height:1; margin:6px 0; }
+  .vibe-desc { font-size:11px; color:rgba(255,255,255,.6); line-height:1.6; margin-top:12px; }
+
+  /* RADAR */
+  .radar-wrap { position:relative; width:280px; height:280px; margin:10px auto; }
+  .radar-svg { width:100%; height:100%; }
+  .radar-pulse { animation:radarSpin 4s linear infinite; transform-origin:50% 50%; }
+  @keyframes radarSpin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+  .player-dot { animation:pingPong 1s ease-in-out infinite; }
+  @keyframes pingPong { 0%,100%{opacity:1} 50%{opacity:.5} }
+  .radar-label { font-family:'VT323',monospace; font-size:14px; letter-spacing:3px; color:var(--neon-green); text-align:center; opacity:.7; margin-top:4px; }
+
+  /* NEARBY */
+  .nearby-list { width:100%; max-width:400px; }
+  .nearby-item { display:flex; align-items:center; gap:14px; padding:14px 16px; border-bottom:1px solid var(--border); position:relative; cursor:pointer; transition:background .15s; }
+  .nearby-item:hover { background:rgba(255,255,255,.03); }
+  .nearby-avatar { font-size:32px; width:48px; height:48px; display:flex; align-items:center; justify-content:center; border:1px solid rgba(255,255,255,.1); flex-shrink:0; }
+  .nearby-info { flex:1; min-width:0; }
+  .nearby-name { font-family:'Bebas Neue',sans-serif; font-size:20px; letter-spacing:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .nearby-vibe { font-size:10px; color:rgba(255,255,255,.45); letter-spacing:1px; margin-top:2px; }
+  .match-pct { font-family:'Bebas Neue',sans-serif; font-size:28px; flex-shrink:0; }
+  .match-high { color:var(--neon-green); }
+  .match-mid  { color:var(--neon-yellow); }
+  .match-low  { color:var(--neon-pink); }
+  .dist-badge { font-family:'VT323',monospace; font-size:12px; color:rgba(255,255,255,.3); letter-spacing:1px; position:absolute; bottom:6px; right:12px; }
+
+  /* SHARE CODE */
+  .share-code { font-family:'Bebas Neue',sans-serif; font-size:clamp(52px,16vw,80px); letter-spacing:12px; color:var(--neon-yellow); text-align:center; text-shadow:0 0 30px rgba(255,238,0,.4); }
+
+  /* CHAT */
+  .chat-box { width:100%; max-width:400px; height:220px; overflow-y:auto; background:var(--panel); border:1px solid var(--border); padding:12px; margin:10px 0; }
+  .chat-msg { margin-bottom:10px; font-size:11px; line-height:1.5; }
+  .chat-msg .sender { font-family:'Bebas Neue',sans-serif; font-size:15px; letter-spacing:1px; }
+  .chat-msg.me .sender { color:var(--neon-green); }
+  .chat-msg.them .sender { color:var(--neon-pink); }
+  .chat-input-row { display:flex; gap:8px; width:100%; max-width:400px; }
+  .chat-input { flex:1; background:var(--panel); border:1px solid rgba(255,255,255,.15); color:#fff; font-family:'Space Mono',monospace; font-size:12px; padding:12px; outline:none; }
+  .chat-input:focus { border-color:var(--neon-green); }
+
+  /* LEADERBOARD */
+  .lb-row { display:flex; align-items:center; gap:12px; padding:12px 14px; border-bottom:1px solid var(--border); }
+  .lb-rank { font-family:'Bebas Neue',sans-serif; font-size:28px; width:36px; text-align:right; color:rgba(255,255,255,.3); flex-shrink:0; }
+  .lb-rank.gold { color:var(--neon-yellow); }
+  .lb-rank.silver { color:#aaa; }
+  .lb-rank.bronze { color:var(--neon-orange); }
+  .lb-info { flex:1; }
+  .lb-name { font-family:'Bebas Neue',sans-serif; font-size:20px; letter-spacing:1px; }
+  .lb-sub { font-size:10px; color:rgba(255,255,255,.35); letter-spacing:1px; }
+  .lb-score { font-family:'Bebas Neue',sans-serif; font-size:26px; color:var(--neon-green); }
+
+  /* MISC */
+  .section-title { font-family:'Bebas Neue',sans-serif; font-size:clamp(30px,9vw,44px); letter-spacing:3px; text-align:center; margin-bottom:4px; }
+  .section-sub { font-size:10px; color:rgba(255,255,255,.4); letter-spacing:2px; text-align:center; margin-bottom:20px; }
+  .btn-row { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin-top:16px; }
+  .stat-row { display:flex; gap:16px; width:100%; max-width:400px; margin:10px 0; }
+  .stat-box { flex:1; background:var(--panel); border:1px solid var(--border); padding:14px 10px; text-align:center; }
+  .stat-num { font-family:'Bebas Neue',sans-serif; font-size:36px; color:var(--neon-green); display:block; }
+  .stat-lbl { font-size:9px; color:rgba(255,255,255,.35); letter-spacing:2px; display:block; }
+  .input-field { width:100%; max-width:400px; background:var(--panel); border:1px solid rgba(255,255,255,.15); border-bottom:2px solid var(--neon-green); color:#fff; font-family:'Space Mono',monospace; font-size:14px; padding:14px; outline:none; margin:8px 0; text-transform:uppercase; letter-spacing:3px; }
+  .input-field:focus { border-bottom-color:var(--neon-cyan); }
+  .input-field::placeholder { color:rgba(255,255,255,.2); letter-spacing:2px; }
+
+  /* NAV */
+  .nav-bar { position:fixed; bottom:0; left:0; right:0; background:rgba(8,8,8,.95); border-top:1px solid var(--border); display:flex; z-index:100; }
+  .nav-item { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:12px 4px 16px; cursor:pointer; font-family:'VT323',monospace; font-size:11px; letter-spacing:1px; color:rgba(255,255,255,.3); gap:4px; transition:color .15s; border:none; background:none; }
+  .nav-item.active { color:var(--neon-green); }
+  .nav-item:hover { color:rgba(255,255,255,.7); }
+  .nav-icon { font-size:20px; }
+  .main-content { padding-bottom:80px; width:100%; }
+
+  /* POPUP */
+  .match-popup { position:fixed; top:20px; left:50%; transform:translateX(-50%); background:var(--bg); border:2px solid var(--neon-green); padding:16px 24px; font-family:'Bebas Neue',sans-serif; font-size:18px; letter-spacing:2px; color:var(--neon-green); z-index:200; animation:popIn .2s ease; text-align:center; box-shadow:0 0 30px rgba(0,255,136,.3); display:none; white-space:nowrap; }
+  @keyframes popIn { from{opacity:0;transform:translateX(-50%) scale(.9)} to{opacity:1;transform:translateX(-50%) scale(1)} }
+
+  .spinner { display:inline-block; width:20px; height:20px; border:2px solid rgba(255,255,255,.1); border-top-color:var(--neon-green); border-radius:50%; animation:spin .6s linear infinite; vertical-align:middle; margin-right:8px; }
+  @keyframes spin { to{transform:rotate(360deg)} }
+  .blink { animation:blink 1s step-end infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+  .error-msg { font-family:'VT323',monospace; font-size:16px; color:var(--neon-pink); letter-spacing:2px; text-align:center; margin-top:8px; min-height:20px; }
+</style>
+</head>
+<body>
+
+<div class="match-popup" id="matchPopup"></div>
+
+<!-- ═══ SPLASH ═══ -->
+<div class="screen active" id="screen-splash">
+  <div class="logo">
+    <span class="v1"><span class="logo-glitch" data-text="VIBE">VIBE</span></span>
+    <span class="v2">CHECK</span>
+  </div>
+  <div class="tagline">// FIND YOUR FREQUENCY //</div>
+  <div style="margin-top:40px; width:100%; max-width:340px;">
+    <button class="btn" onclick="goTo('screen-name')">START SCANNING</button>
+    <button class="btn pink" onclick="goTo('screen-join')">JOIN WITH CODE</button>
+  </div>
+  <div style="margin-top:30px; font-size:10px; color:rgba(255,255,255,.2); letter-spacing:2px; text-align:center; max-width:300px; line-height:1.8;">
+    ANSWER 5 QUESTIONS → GET YOUR VIBE TYPE → FIND WHO'S NEAR YOU
+  </div>
+</div>
+
+<!-- ═══ NAME ═══ -->
+<div class="screen" id="screen-name">
+  <div class="section-title">WHO ARE YOU?</div>
+  <div class="section-sub">// YOUR HANDLE IN THE FIELD //</div>
+  <input type="text" class="input-field" id="playerName" placeholder="YOUR NAME / ALIAS" maxlength="16">
+  <div class="error-msg" id="nameError"></div>
+  <div class="btn-row">
+    <button class="btn" onclick="startQuiz()">LOCK IN →</button>
+    <button class="btn pink btn-sm" onclick="goTo('screen-splash')">← BACK</button>
+  </div>
+</div>
+
+<!-- ═══ QUIZ ═══ -->
+<div class="screen" id="screen-quiz">
+  <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+  <div class="question-num" id="questionNum">Q1 / 5</div>
+  <div class="question-text" id="questionText"></div>
+  <div class="answer-grid" id="answerGrid"></div>
+</div>
+
+<!-- ═══ RESULT ═══ -->
+<div class="screen" id="screen-result">
+  <div class="vibe-card">
+    <span class="vibe-emoji" id="resultEmoji">🔥</span>
+    <div class="panel-label">YOUR VIBE TYPE</div>
+    <div class="vibe-type" id="resultType">—</div>
+    <div class="vibe-desc" id="resultDesc"></div>
+  </div>
+  <div class="panel" style="margin-top:0;">
+    <div class="panel-label">SESSION CODE</div>
+    <div class="share-code" id="sessionCode">—</div>
+    <div style="font-size:10px; color:rgba(255,255,255,.3); letter-spacing:2px; text-align:center; margin-top:6px;">SHARE THIS TO INVITE FRIENDS</div>
+  </div>
+  <div class="error-msg" id="resultError"></div>
+  <button class="btn" id="activateBtn" onclick="activateRadar()">ACTIVATE RADAR →</button>
+</div>
+
+<!-- ═══ MAIN ═══ -->
+<div class="screen" id="screen-main" style="align-items:stretch; justify-content:flex-start; padding:0;">
+  <div class="main-content">
+
+    <!-- RADAR TAB -->
+    <div id="tab-radar" style="padding:20px; display:flex; flex-direction:column; align-items:center;">
+      <div style="width:100%; max-width:400px; display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <div>
+          <div class="section-title" style="text-align:left; margin-bottom:0; font-size:32px;">RADAR</div>
+          <div style="font-size:10px; color:rgba(255,255,255,.3); letter-spacing:2px;" id="radarStatus">SCANNING...</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-family:'VT323',monospace; font-size:12px; color:rgba(255,255,255,.35); letter-spacing:2px;">YOUR VIBE</div>
+          <div style="font-family:'Bebas Neue',sans-serif; font-size:20px;" id="radarMyVibe">—</div>
+        </div>
+      </div>
+      <div class="radar-wrap">
+        <svg class="radar-svg" viewBox="0 0 280 280">
+          <defs>
+            <radialGradient id="radarGrad" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stop-color="#00ff88" stop-opacity="0.06"/>
+              <stop offset="100%" stop-color="#00ff88" stop-opacity="0"/>
+            </radialGradient>
+          </defs>
+          <circle cx="140" cy="140" r="120" fill="none" stroke="#00ff88" stroke-opacity=".08" stroke-width="1"/>
+          <circle cx="140" cy="140" r="80"  fill="none" stroke="#00ff88" stroke-opacity=".10" stroke-width="1"/>
+          <circle cx="140" cy="140" r="40"  fill="none" stroke="#00ff88" stroke-opacity=".15" stroke-width="1"/>
+          <line x1="20" y1="140" x2="260" y2="140" stroke="#00ff88" stroke-opacity=".08" stroke-width="1"/>
+          <line x1="140" y1="20" x2="140" y2="260" stroke="#00ff88" stroke-opacity=".08" stroke-width="1"/>
+          <g class="radar-pulse">
+            <path d="M140,140 L140,20 A120,120 0 0,1 222,70 Z" fill="url(#radarGrad)" opacity=".5"/>
+            <line x1="140" y1="140" x2="140" y2="22" stroke="#00ff88" stroke-opacity=".6" stroke-width="1.5"/>
+          </g>
+          <g id="radarDots"></g>
+          <circle cx="140" cy="140" r="7" fill="#00ff88" opacity=".9"/>
+          <circle cx="140" cy="140" r="14" fill="none" stroke="#00ff88" stroke-opacity=".4" stroke-width="1.5" class="player-dot"/>
+        </svg>
+      </div>
+      <div class="radar-label blink" id="radarCount">SCANNING...</div>
+      <div class="stat-row">
+        <div class="stat-box"><span class="stat-num" id="statMatched">0</span><span class="stat-lbl">MATCHED</span></div>
+        <div class="stat-box"><span class="stat-num" id="statPts">0</span><span class="stat-lbl">PTS</span></div>
+        <div class="stat-box"><span class="stat-num" id="statStreak">0</span><span class="stat-lbl">STREAK</span></div>
+      </div>
+    </div>
+
+    <!-- NEARBY TAB -->
+    <div id="tab-nearby" style="padding:20px; display:none; flex-direction:column; align-items:center;">
+      <div class="section-title">NEARBY</div>
+      <div class="section-sub">// TAP TO PING //</div>
+      <div class="nearby-list" id="nearbyList"><div style="text-align:center; padding:30px; color:rgba(255,255,255,.3); font-family:VT323,monospace; font-size:18px; letter-spacing:3px;">LOADING...</div></div>
+      <button class="btn cyan" onclick="loadNearby()" style="margin-top:16px;">↻ REFRESH</button>
+    </div>
+
+    <!-- CHAT TAB -->
+    <div id="tab-chat" style="padding:20px; display:none; flex-direction:column; align-items:center;">
+      <div class="section-title">FIELD CHAT</div>
+      <div class="section-sub">// LOCAL FREQUENCY //</div>
+      <div class="chat-box" id="chatBox"></div>
+      <div class="chat-input-row">
+        <input type="text" class="chat-input" id="chatInput" placeholder="broadcast to nearby..." maxlength="80">
+        <button class="btn btn-sm" onclick="sendChat()">SEND</button>
+      </div>
+    </div>
+
+    <!-- LEADERBOARD TAB -->
+    <div id="tab-lb" style="padding:20px; display:none; flex-direction:column; align-items:center;">
+      <div class="section-title">LEADERBOARD</div>
+      <div class="section-sub">// TOP VIBES IN SESSION //</div>
+      <div style="width:100%; max-width:400px;" id="lbList"><div style="text-align:center; padding:30px; color:rgba(255,255,255,.3); font-family:VT323,monospace; font-size:18px; letter-spacing:3px;">LOADING...</div></div>
+    </div>
+
+  </div>
+
+  <nav class="nav-bar">
+    <button class="nav-item active" onclick="switchTab('radar',this)"><span class="nav-icon">📡</span>RADAR</button>
+    <button class="nav-item" onclick="switchTab('nearby',this)"><span class="nav-icon">👥</span>NEARBY</button>
+    <button class="nav-item" onclick="switchTab('chat',this)"><span class="nav-icon">💬</span>CHAT</button>
+    <button class="nav-item" onclick="switchTab('lb',this)"><span class="nav-icon">🏆</span>BOARD</button>
+  </nav>
+</div>
+
+<!-- ═══ JOIN ═══ -->
+<div class="screen" id="screen-join">
+  <div class="section-title">JOIN SESSION</div>
+  <div class="section-sub">// ENTER A FRIEND'S CODE //</div>
+  <input type="text" class="input-field" id="joinCode" placeholder="4-LETTER CODE" maxlength="4">
+  <input type="text" class="input-field" id="joinName" placeholder="YOUR NAME" maxlength="16">
+  <div class="error-msg" id="joinError"></div>
+  <div class="btn-row">
+    <button class="btn pink" onclick="joinSession()">CONNECT →</button>
+    <button class="btn btn-sm" onclick="goTo('screen-splash')">← BACK</button>
+  </div>
+</div>
+
+<script>
+// ─── SUPABASE ───
+const SUPABASE_URL  = 'https://mcqjoqcrjztvpahdrnxs.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1jcWpvcWNyanp0dnBhaGRybnhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4NDM2NDMsImV4cCI6MjA4NjQxOTY0M30.kTTGWa4quaH5g8zEhBmurtFvLHcTNs7Gw1fYtKvC4q4';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+// ─── DATA ───
+const QUESTIONS = [
+  { text:"FRIDAY NIGHT ENERGY?", answers:[
+    {text:"Packed bar, strangers becoming friends",val:"social"},
+    {text:"Small crew, deep convos till 3am",val:"depth"},
+    {text:"Solo adventure, see where it goes",val:"chaos"},
+    {text:"Home base, but the party comes to me",val:"anchor"}
+  ]},
+  { text:"SOMEONE DISAGREES WITH YOU. YOU...", answers:[
+    {text:"Engage, debate, change their mind",val:"fire"},
+    {text:"Listen. Maybe they have a point",val:"water"},
+    {text:"Laugh and move on",val:"air"},
+    {text:"Stand firm, quietly",val:"earth"}
+  ]},
+  { text:"YOUR IDEA OF A GOOD TIME?", answers:[
+    {text:"Something I've never done before",val:"chaos"},
+    {text:"A familiar place done right",val:"anchor"},
+    {text:"Whatever gets the most people together",val:"social"},
+    {text:"Something that means something",val:"depth"}
+  ]},
+  { text:"HOW DO YOU RECHARGE?", answers:[
+    {text:"By being around energy",val:"social"},
+    {text:"By being completely alone",val:"depth"},
+    {text:"By doing something physical",val:"fire"},
+    {text:"By creating something",val:"air"}
+  ]},
+  { text:"PEOPLE DESCRIBE YOU AS...", answers:[
+    {text:"The one who makes it happen",val:"fire"},
+    {text:"The one who keeps it real",val:"earth"},
+    {text:"The one who's always interesting",val:"air"},
+    {text:"The one you can always count on",val:"anchor"}
+  ]}
+];
+
+const VIBE_TYPES = {
+  social: {name:"SIGNAL BOOST", emoji:"📡", color:"#00ffff",  desc:"You're the amplifier. Rooms get louder when you walk in."},
+  depth:  {name:"DEEP CRYPT",   emoji:"🌊", color:"#8888ff",  desc:"You don't do surface. Every conversation goes somewhere real."},
+  chaos:  {name:"STATIC FLUX",  emoji:"⚡", color:"#ff0080",  desc:"You run on novelty. Plans? Overrated. You make things memorable."},
+  anchor: {name:"GROUND ZERO",  emoji:"🪨", color:"#ffaa00",  desc:"The room orbits you. You're the gravity that makes sense."},
+  fire:   {name:"HOT TAKE",     emoji:"🔥", color:"#ff4400",  desc:"You ignite conversations. Your energy is never lukewarm."},
+  water:  {name:"FLOW STATE",   emoji:"💧", color:"#44ccff",  desc:"You adapt, elevate everyone, and always say the right thing."},
+  air:    {name:"FREQUENCY",    emoji:"🌀", color:"#cc44ff",  desc:"Tuned to a channel others can barely hear. Magnetic."},
+  earth:  {name:"BEDROCK",      emoji:"🌍", color:"#44ff88",  desc:"Who people call at 2am. Steady, honest, rare loyalty."}
+};
+
+// Vibe compatibility matrix (0-100)
+const COMPAT = {
+  social:["social","fire","chaos","air"],
+  depth: ["depth","water","earth","anchor"],
+  chaos: ["chaos","social","fire","air"],
+  anchor:["anchor","depth","earth","water"],
+  fire:  ["fire","social","chaos","air"],
+  water: ["water","depth","anchor","earth"],
+  air:   ["air","chaos","social","fire"],
+  earth: ["earth","anchor","depth","water"]
+};
+
+function getMatchPct(a, b) {
+  const list = COMPAT[a] || [];
+  const idx = list.indexOf(b);
+  if (idx === -1) return 30 + Math.floor(Math.random()*20);
+  return [95, 82, 68, 55][idx] + Math.floor(Math.random()*8) - 4;
+}
+
+// ─── STATE ───
+let state = {
+  name:"", answers:[], vibeKey:"", vibeData:null,
+  sessionCode:"", playerId:null,
+  lat:null, lng:null,
+  matched:0, pts:0, streak:0,
+  currentQ:0,
+  nearbyPlayers:[],
+  chatChannel:null, presenceChannel:null,
+  locationWatcher:null
+};
+
+// ─── NAV ───
+function goTo(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+function switchTab(tab, el) {
+  ['radar','nearby','chat','lb'].forEach(t => {
+    document.getElementById('tab-'+t).style.display = 'none';
+  });
+  document.getElementById('tab-'+tab).style.display = 'flex';
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  el.classList.add('active');
+  if (tab === 'nearby') loadNearby();
+  if (tab === 'lb')     loadLeaderboard();
+}
+
+// ─── QUIZ ───
+function startQuiz() {
+  const name = document.getElementById('playerName').value.trim();
+  if (!name) { document.getElementById('nameError').textContent = 'ENTER A NAME TO CONTINUE'; return; }
+  document.getElementById('nameError').textContent = '';
+  state.name = name.toUpperCase().replace(/[^A-Z0-9_\.]/g,'');
+  state.currentQ = 0; state.answers = [];
+  goTo('screen-quiz');
+  renderQuestion();
+}
+
+function renderQuestion() {
+  const q = QUESTIONS[state.currentQ];
+  document.getElementById('progressFill').style.width = (state.currentQ / QUESTIONS.length * 100) + '%';
+  document.getElementById('questionNum').textContent = `Q${state.currentQ+1} / ${QUESTIONS.length}`;
+  document.getElementById('questionText').textContent = q.text;
+  const grid = document.getElementById('answerGrid');
+  grid.innerHTML = '';
+  ['A','B','C','D'].forEach((ltr, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'answer-btn';
+    btn.innerHTML = `<span class="letter">${ltr}</span>${q.answers[i].text}`;
+    btn.onclick = () => selectAnswer(q.answers[i].val, btn);
+    grid.appendChild(btn);
+  });
+}
+
+function selectAnswer(val, btn) {
+  document.querySelectorAll('.answer-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  state.answers.push(val);
+  setTimeout(() => {
+    state.currentQ++;
+    if (state.currentQ < QUESTIONS.length) renderQuestion();
+    else computeVibe();
+  }, 350);
+}
+
+function computeVibe() {
+  const tally = {};
+  state.answers.forEach(a => { tally[a] = (tally[a]||0)+1; });
+  const top = Object.keys(tally).reduce((a,b) => tally[a] >= tally[b] ? a : b);
+  state.vibeKey = top;
+  state.vibeData = VIBE_TYPES[top];
+  state.sessionCode = Math.random().toString(36).substr(2,4).toUpperCase();
+
+  const v = state.vibeData;
+  document.getElementById('resultEmoji').textContent = v.emoji;
+  document.getElementById('resultType').textContent = v.name;
+  document.getElementById('resultType').style.color = v.color;
+  document.getElementById('resultDesc').textContent = v.desc;
+  document.getElementById('sessionCode').textContent = state.sessionCode;
+  document.getElementById('resultError').textContent = '';
+  goTo('screen-result');
+}
+
+// ─── JOIN ───
+function joinSession() {
+  const code = document.getElementById('joinCode').value.trim().toUpperCase();
+  const name = document.getElementById('joinName').value.trim().toUpperCase();
+  if (!code || code.length < 3) { document.getElementById('joinError').textContent = 'ENTER A VALID CODE'; return; }
+  if (!name) { document.getElementById('joinError').textContent = 'ENTER YOUR NAME'; return; }
+  document.getElementById('joinError').textContent = '';
+
+  state.name = name.replace(/[^A-Z0-9_\.]/g,'');
+  state.sessionCode = code;
+  // Random vibe for joiners who skip quiz
+  const keys = Object.keys(VIBE_TYPES);
+  state.vibeKey = keys[Math.floor(Math.random()*keys.length)];
+  state.vibeData = VIBE_TYPES[state.vibeKey];
+
+  const v = state.vibeData;
+  document.getElementById('resultEmoji').textContent = v.emoji;
+  document.getElementById('resultType').textContent = v.name;
+  document.getElementById('resultType').style.color = v.color;
+  document.getElementById('resultDesc').textContent = v.desc;
+  document.getElementById('sessionCode').textContent = code;
+  document.getElementById('resultError').textContent = '';
+  goTo('screen-result');
+}
+
+// ─── ACTIVATE (save player + start realtime) ───
+async function activateRadar() {
+  const btn = document.getElementById('activateBtn');
+  btn.disabled = true;
+  btn.textContent = 'CONNECTING...';
+  document.getElementById('resultError').textContent = '';
+
+  try {
+    // Get location
+    await getLocation();
+
+    // Insert player
+    const { data, error } = await sb.from('vc_players').insert({
+      name: state.name,
+      vibe_key: state.vibeKey,
+      vibe_name: state.vibeData.name,
+      vibe_emoji: state.vibeData.emoji,
+      session_code: state.sessionCode,
+      lat: state.lat,
+      lng: state.lng,
+      pts: 0, matched: 0, streak: 0
+    }).select().single();
+
+    if (error) throw error;
+    state.playerId = data.id;
+
+    // Setup realtime
+    setupRealtime();
+    startLocationUpdates();
+
+    // Show main
+    const v = state.vibeData;
+    document.getElementById('radarMyVibe').textContent = v.emoji + ' ' + v.name;
+    document.getElementById('radarMyVibe').style.color = v.color;
+    goTo('screen-main');
+    loadNearbyForRadar();
+
+  } catch(e) {
+    console.error(e);
+    document.getElementById('resultError').textContent = 'CONNECTION FAILED — CHECK NETWORK';
+    btn.disabled = false;
+    btn.textContent = 'ACTIVATE RADAR →';
+  }
+}
+
+// ─── LOCATION ───
+function getLocation() {
+  return new Promise((resolve) => {
+    if (!navigator.geolocation) { resolve(); return; }
+    navigator.geolocation.getCurrentPosition(
+      pos => { state.lat = pos.coords.latitude; state.lng = pos.coords.longitude; resolve(); },
+      () => resolve(), // silently fail — game still works
+      { timeout: 5000 }
+    );
+  });
+}
+
+function startLocationUpdates() {
+  if (!navigator.geolocation) return;
+  state.locationWatcher = setInterval(async () => {
+    navigator.geolocation.getCurrentPosition(async pos => {
+      state.lat = pos.coords.latitude;
+      state.lng = pos.coords.longitude;
+      if (state.playerId) {
+        await sb.from('vc_players').update({
+          lat: state.lat, lng: state.lng, last_seen: new Date().toISOString()
+        }).eq('id', state.playerId);
+      }
+    }, ()=>{}, { timeout:3000 });
+  }, 15000);
+}
+
+// ─── HAVERSINE DISTANCE ───
+function distMeters(lat1, lng1, lat2, lng2) {
+  const R = 6371000;
+  const dLat = (lat2-lat1) * Math.PI/180;
+  const dLng = (lng2-lng1) * Math.PI/180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function fmtDist(m) {
+  if (m < 1000) return Math.round(m) + 'M';
+  return (m/1000).toFixed(1) + 'KM';
+}
+
+// ─── REALTIME ───
+function setupRealtime() {
+  // Chat channel for this session
+  state.chatChannel = sb.channel('chat:' + state.sessionCode)
+    .on('broadcast', { event: 'msg' }, payload => {
+      if (payload.payload.player_id !== state.playerId) {
+        appendChatMsg(payload.payload.name, payload.payload.emoji, payload.payload.text, false);
+      }
+    })
+    .subscribe();
+
+  // Presence/player updates
+  state.presenceChannel = sb
+    .channel('players:' + state.sessionCode)
+    .on('postgres_changes', {
+      event: '*', schema: 'public', table: 'vc_players',
+      filter: `session_code=eq.${state.sessionCode}`
+    }, () => {
+      loadNearbyForRadar();
+    })
+    .subscribe();
+}
+
+// ─── LOAD NEARBY (radar) ───
+async function loadNearbyForRadar() {
+  try {
+    const cutoff = new Date(Date.now() - 30*60*1000).toISOString();
+    const { data } = await sb.from('vc_players')
+      .select('*')
+      .eq('session_code', state.sessionCode)
+      .neq('id', state.playerId || 'x')
+      .gte('last_seen', cutoff)
+      .order('last_seen', { ascending: false })
+      .limit(20);
+
+    state.nearbyPlayers = (data || []).map(p => ({
+      ...p,
+      match: getMatchPct(state.vibeKey, p.vibe_key),
+      dist: (state.lat && p.lat) ? distMeters(state.lat, state.lng, p.lat, p.lng) : null
+    })).sort((a,b) => b.match - a.match);
+
+    renderRadarDots();
+    const count = state.nearbyPlayers.length;
+    document.getElementById('radarCount').textContent = count > 0 ? `${count} VIBE${count!==1?'S':''} DETECTED` : 'NO VIBES YET — SHARE YOUR CODE';
+    document.getElementById('radarStatus').textContent = count > 0 ? `${count} IN RANGE` : 'WAITING FOR PLAYERS';
+  } catch(e) { console.error(e); }
+}
+
+// ─── RADAR DOTS ───
+function renderRadarDots() {
+  const el = document.getElementById('radarDots');
+  el.innerHTML = '';
+  const players = state.nearbyPlayers.slice(0, 10);
+  players.forEach((p, i) => {
+    const angle = (i / players.length) * 2 * Math.PI - Math.PI/2;
+    const maxR = p.match > 80 ? 45 : p.match > 60 ? 80 : 115;
+    const r = maxR + Math.random()*15;
+    const cx = Math.round(140 + r * Math.cos(angle));
+    const cy = Math.round(140 + r * Math.sin(angle));
+    const color = p.match >= 80 ? '#00ff88' : p.match >= 60 ? '#ffee00' : '#ff0080';
+    el.innerHTML += `
+      <circle cx="${cx}" cy="${cy}" r="5" fill="${color}" opacity=".9"/>
+      <circle cx="${cx}" cy="${cy}" r="9" fill="none" stroke="${color}" stroke-opacity=".3" stroke-width="1"/>
+      <text x="${cx+8}" y="${cy-6}" fill="${color}" font-family="VT323,monospace" font-size="12" opacity=".7">${p.vibe_emoji}</text>
+    `;
+  });
+}
+
+// ─── NEARBY TAB ───
+async function loadNearby() {
+  const list = document.getElementById('nearbyList');
+  list.innerHTML = '<div style="text-align:center; padding:20px; font-family:VT323,monospace; font-size:18px; color:rgba(255,255,255,.4); letter-spacing:3px;"><span class="spinner"></span>SCANNING...</div>';
+  await loadNearbyForRadar();
+
+  if (state.nearbyPlayers.length === 0) {
+    list.innerHTML = '<div style="text-align:center; padding:30px; font-family:VT323,monospace; font-size:18px; color:rgba(255,255,255,.3); letter-spacing:3px;">NO VIBES IN RANGE YET<br><br>SHARE YOUR CODE:<br><span style="color:var(--neon-yellow); font-size:28px; letter-spacing:6px;">'+state.sessionCode+'</span></div>';
+    return;
+  }
+
+  list.innerHTML = '';
+  state.nearbyPlayers.forEach(p => {
+    const mc = p.match >= 80 ? 'match-high' : p.match >= 60 ? 'match-mid' : 'match-low';
+    const distStr = p.dist !== null ? fmtDist(p.dist) : '?M';
+    list.innerHTML += `
+      <div class="nearby-item" onclick="pingPlayer('${p.id}','${p.name}','${p.vibe_emoji}')">
+        <div class="nearby-avatar">${p.vibe_emoji}</div>
+        <div class="nearby-info">
+          <div class="nearby-name">${p.name}</div>
+          <div class="nearby-vibe">${p.vibe_name}</div>
+        </div>
+        <div class="match-pct ${mc}">${p.match}%</div>
+        <div class="dist-badge">${distStr} AWAY</div>
+      </div>`;
+  });
+}
+
+// ─── PING ───
+async function pingPlayer(toId, toName, toEmoji) {
+  state.matched++;
+  state.streak++;
+  state.pts += Math.max(10, state.nearbyPlayers.find(p=>p.id===toId)?.match || 50);
+  updateStats();
+  showPopup(`⚡ PINGED ${toName} ⚡`);
+
+  // Update DB
+  if (state.playerId) {
+    await sb.from('vc_players').update({ pts: state.pts, matched: state.matched, streak: state.streak }).eq('id', state.playerId);
+    await sb.from('vc_matches').insert({ from_player: state.playerId, to_player: toId, match_pct: state.nearbyPlayers.find(p=>p.id===toId)?.match, session_code: state.sessionCode });
+  }
+
+  // Auto chat message
+  appendChatMsg(toName, toEmoji, `${state.vibeData.emoji} ${state.name} pinged you — say hi!`, false);
+}
+
+// ─── CHAT ───
+function appendChatMsg(name, emoji, text, isMe) {
+  const box = document.getElementById('chatBox');
+  const div = document.createElement('div');
+  div.className = 'chat-msg ' + (isMe ? 'me' : 'them');
+  div.innerHTML = `<span class="sender">${name} ${emoji}</span><div>${text}</div>`;
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+}
+
+async function sendChat() {
+  const input = document.getElementById('chatInput');
+  const msg = input.value.trim();
+  if (!msg) return;
+  input.value = '';
+
+  appendChatMsg(state.name, state.vibeData?.emoji||'', msg, true);
+
+  // Broadcast via realtime
+  if (state.chatChannel) {
+    state.chatChannel.send({
+      type: 'broadcast', event: 'msg',
+      payload: { player_id: state.playerId, name: state.name, emoji: state.vibeData?.emoji||'', text: msg }
+    });
+  }
+
+  // Persist to DB
+  if (state.playerId) {
+    await sb.from('vc_chat').insert({
+      session_code: state.sessionCode,
+      player_id: state.playerId,
+      player_name: state.name,
+      player_emoji: state.vibeData?.emoji||'',
+      message: msg
+    });
+  }
+}
+
+// ─── LEADERBOARD ───
+async function loadLeaderboard() {
+  const el = document.getElementById('lbList');
+  try {
+    const { data } = await sb.from('vc_players')
+      .select('name, vibe_name, vibe_emoji, pts, matched')
+      .eq('session_code', state.sessionCode)
+      .order('pts', { ascending: false })
+      .limit(10);
+
+    if (!data || data.length === 0) {
+      el.innerHTML = '<div style="text-align:center; padding:30px; font-family:VT323,monospace; font-size:18px; color:rgba(255,255,255,.3); letter-spacing:3px;">NO DATA YET</div>';
+      return;
+    }
+
+    const ranks = ['gold','silver','bronze'];
+    el.innerHTML = data.map((p, i) => `
+      <div class="lb-row">
+        <div class="lb-rank ${ranks[i]||''}">${i+1}</div>
+        <div style="font-size:24px;">${p.vibe_emoji}</div>
+        <div class="lb-info">
+          <div class="lb-name">${p.name}</div>
+          <div class="lb-sub">${p.vibe_name} · ${p.matched} MATCHES</div>
+        </div>
+        <div class="lb-score">${p.pts}</div>
+      </div>
+    `).join('');
+  } catch(e) {
+    el.innerHTML = '<div style="color:var(--neon-pink); text-align:center; padding:20px; font-family:VT323,monospace; font-size:16px; letter-spacing:2px;">FAILED TO LOAD</div>';
+  }
+}
+
+// ─── UTILS ───
+function updateStats() {
+  document.getElementById('statMatched').textContent = state.matched;
+  document.getElementById('statPts').textContent = state.pts;
+  document.getElementById('statStreak').textContent = state.streak;
+}
+
+function showPopup(msg) {
+  const el = document.getElementById('matchPopup');
+  el.textContent = msg;
+  el.style.display = 'block';
+  setTimeout(() => { el.style.display = 'none'; }, 2800);
+}
+
+// Poll for nearby every 20s while on radar tab
+setInterval(() => {
+  if (state.playerId && document.getElementById('tab-radar').style.display !== 'none') {
+    loadNearbyForRadar();
+  }
+}, 20000);
+
+// Keyboard shortcuts
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('chatInput')?.addEventListener('keydown', e => { if (e.key==='Enter') sendChat(); });
+  document.getElementById('playerName')?.addEventListener('keydown', e => { if (e.key==='Enter') startQuiz(); });
+  document.getElementById('joinCode')?.addEventListener('input', e => { e.target.value = e.target.value.toUpperCase(); });
+  document.getElementById('joinName')?.addEventListener('input', e => { e.target.value = e.target.value.toUpperCase(); });
+});
+</script>
+</body>
+</html>
