@@ -1,8 +1,9 @@
+'use client'
+import { useEffect } from 'react'
+
 export default function VibecheckPage() {
-  return (
-    <iframe
-      src="/vibecheck/index.html"
-      style={{ width: '100%', height: '100vh', border: 'none' }}
-    />
-  )
+  useEffect(() => {
+    window.location.href = '/vibecheck/index.html'
+  }, [])
+  return null
 }
