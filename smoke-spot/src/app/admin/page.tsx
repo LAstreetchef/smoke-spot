@@ -3,6 +3,8 @@ import { createClient as createServerClient } from '@/lib/supabase/server'
 import { createClient } from '@supabase/supabase-js'
 import AdminDashboard from './AdminDashboard'
 
+export const dynamic = 'force-dynamic'
+
 const ADMIN_EMAIL = 'message4u@secretmessage4u.com'
 
 export default async function AdminPage() {

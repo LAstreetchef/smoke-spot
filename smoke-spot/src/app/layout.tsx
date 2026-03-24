@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/Providers";
@@ -13,6 +13,13 @@ const spaceGrotesk = Space_Grotesk({
   variable: "--font-space-grotesk",
 });
 
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+};
+
 export const metadata: Metadata = {
   title: "Smoke Spot - Find Your Perfect Smoke Spot",
   description: "Discover and share smoking-friendly locations near you. Join the community of smokers finding the best spots.",
@@ -20,12 +27,6 @@ export const metadata: Metadata = {
   icons: {
     icon: "/favicon.png",
     apple: "/logo.png",
-  },
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 1,
-    userScalable: false,
   },
 };
 
