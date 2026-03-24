@@ -8,6 +8,7 @@ import { createClient } from '@/lib/supabase/client'
 // Dynamic import for Map to avoid SSR issues
 const Map = dynamic(() => import('@/components/GoogleMap'), { ssr: false })
 const FireSalePopup = dynamic(() => import('@/components/FireSalePopup'), { ssr: false })
+const VibesHereNow = dynamic(() => import('@/components/VibesHereNow'), { ssr: false })
 
 // Debounce helper
 function debounce<T extends (...args: any[]) => any>(fn: T, delay: number): T {
@@ -648,6 +649,9 @@ export default function AppPage() {
                 )}
               </div>
             </div>
+
+            {/* Vibes Here Now */}
+            <VibesHereNow spotId={selectedSpot.id} />
 
             {/* Actions */}
             <div className="flex gap-3 mt-4">

@@ -2,7 +2,8 @@
 
 import { useCallback, useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { GoogleMap, useJsApiLoader, Marker, InfoWindow } from '@react-google-maps/api'
+import { GoogleMap, useJsApiLoader, Marker, InfoWindow, OverlayView } from '@react-google-maps/api'
+import { createClient } from '@/lib/supabase/client'
 
 // IMPORTANT: Keep libraries array outside component to prevent reloading
 const GOOGLE_MAPS_LIBRARIES: ("places")[] = ['places']
@@ -35,6 +36,23 @@ const MAP_STYLES = [
   { id: 'hybrid', label: 'Hybrid', icon: '🌍' },
   { id: 'terrain', label: 'Terrain', icon: '⛰️' },
 ]
+
+const VIBE_COLORS: Record<string, string> = {
+  social: '#00ffff',
+  chaos: '#ff0080',
+  depth: '#8888ff',
+  anchor: '#ffaa00',
+  fire: '#ff4400',
+  water: '#44ccff',
+  air: '#cc44ff',
+  earth: '#44ff88',
+}
+
+interface VibeData {
+  count: number
+  dominant_vibe: string
+  dominant_emoji: string
+}
 
 const SPOT_COLORS: Record<string, string> = {
   outdoor: '#4ADE80',
@@ -75,6 +93,53 @@ export default function GoogleMapComponent({
   const [center, setCenter] = useState(initialCenter)
   const [zoom, setZoom] = useState(initialZoom)
   const mapRef = useRef<google.maps.Map | null>(null)
+  const [vibeMap, setVibeMap] = useState<Record<string, VibeData>>({})
+
+  // Fetch active vibe sessions grouped by spot_id
+  useEffect(() => {
+    async function fetchVibeData() {
+      const supabase = createClient()
+      const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString()
+
+      const { data } = await supabase
+        .from('vc_players')
+        .select('spot_id, vibe_key, vibe_emoji')
+        .gt('last_seen', thirtyMinAgo)
+
+      if (!data || data.length === 0) {
+        setVibeMap({})
+        return
+      }
+
+      // Group by spot_id, find dominant vibe per spot
+      const grouped: Record<string, { vibe_key: string; vibe_emoji: string }[]> = {}
+      for (const row of data) {
+        if (!grouped[row.spot_id]) grouped[row.spot_id] = []
+        grouped[row.spot_id].push({ vibe_key: row.vibe_key, vibe_emoji: row.vibe_emoji })
+      }
+
+      const result: Record<string, VibeData> = {}
+      for (const [spotId, players] of Object.entries(grouped)) {
+        const counts: Record<string, { count: number; emoji: string }> = {}
+        for (const p of players) {
+          if (!counts[p.vibe_key]) counts[p.vibe_key] = { count: 0, emoji: p.vibe_emoji }
+          counts[p.vibe_key].count++
+        }
+        const dominant = Object.entries(counts).sort((a, b) => b[1].count - a[1].count)[0]
+        result[spotId] = {
+          count: players.length,
+          dominant_vibe: dominant[0],
+          dominant_emoji: dominant[1].emoji,
+        }
+      }
+
+      setVibeMap(result)
+    }
+
+    fetchVibeData()
+    const interval = setInterval(fetchVibeData, 60_000)
+    return () => clearInterval(interval)
+  }, [])
 
   const onLoad = useCallback((map: google.maps.Map) => {
     mapRef.current = map
@@ -203,6 +268,37 @@ export default function GoogleMapComponent({
             title={spot.name}
           />
         ))}
+
+        {/* Vibe pulse rings */}
+        {spots.map((spot) => {
+          const vibe = vibeMap[spot.id]
+          if (!vibe) return null
+          const color = VIBE_COLORS[vibe.dominant_vibe] || '#44ff88'
+          return (
+            <OverlayView
+              key={`vibe-${spot.id}`}
+              position={{ lat: spot.latitude, lng: spot.longitude }}
+              mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}
+            >
+              <div
+                style={{ transform: 'translate(-50%, -50%)' }}
+                className="pointer-events-none"
+              >
+                <div
+                  className="vibe-pulse-ring"
+                  style={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: '50%',
+                    border: `2px solid ${color}`,
+                    boxShadow: `0 0 8px ${color}80, 0 0 16px ${color}40`,
+                    animation: 'vibePulse 2s ease-in-out infinite',
+                  }}
+                />
+              </div>
+            </OverlayView>
+          )
+        })}
 
         {/* Info window for selected spot */}
         {selectedSpot && (

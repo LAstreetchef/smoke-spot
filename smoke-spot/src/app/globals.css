@@ -164,3 +164,18 @@ body.no-bounce {
   animation: fire-flicker 0.5s ease-in-out infinite;
   display: inline-block;
 }
+
+@keyframes vibePulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.6);
+    opacity: 0.3;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
