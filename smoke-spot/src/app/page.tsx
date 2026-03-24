@@ -61,7 +61,7 @@ export default function Home() {
           </div>
 
           {/* Feature cards */}
-          <div className="grid md:grid-cols-3 gap-6 mt-20">
+          <div className="grid md:grid-cols-4 gap-6 mt-20">
             <div className="bg-secondary/50 backdrop-blur-sm rounded-2xl p-6 border border-neutral/10">
               <div className="text-4xl mb-4">📍</div>
               <h3 className="font-display text-xl font-bold text-neutral mb-2">Discover Spots</h3>
@@ -77,6 +77,11 @@ export default function Home() {
               <h3 className="font-display text-xl font-bold text-neutral mb-2">NFC Sharing</h3>
               <p className="text-neutral/60">Tap phones to share your favorite spots instantly.</p>
             </div>
+            <Link href="/vibecheck" className="bg-secondary/50 backdrop-blur-sm rounded-2xl p-6 border border-neutral/10 hover:border-accent/50 transition group">
+              <div className="text-4xl mb-4">⚡</div>
+              <h3 className="font-display text-xl font-bold text-neutral mb-2 group-hover:text-accent transition">Vibe Check</h3>
+              <p className="text-neutral/60">Find like-minded people near you. Answer 5 questions, get your vibe type, scan the room.</p>
+            </Link>
           </div>
         </div>
       </div>
