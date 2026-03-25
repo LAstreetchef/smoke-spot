@@ -359,8 +359,8 @@ export default function AppPage() {
 
   return (
     <main className="h-screen w-screen bg-primary flex flex-col overflow-hidden">
-      {/* Search Bar */}
-      <div className="absolute top-4 left-4 right-4 z-10">
+      {/* Search Bar — hidden during Vibe Check */}
+      {!vibeCheckActive && <div className="absolute top-4 left-4 right-4 z-10">
         <div className="bg-secondary/95 backdrop-blur-md rounded-2xl shadow-xl shadow-black/20 border border-accent/20 ring-1 ring-accent/10">
           <div className="flex items-center px-4 py-3">
             <span className="text-accent/70 mr-3">🔍</span>
@@ -462,7 +462,7 @@ export default function AppPage() {
             )}
           </div>
         )}
-      </div>
+      </div>}
 
       {/* Map */}
       <div className="flex-1">
@@ -506,8 +506,8 @@ export default function AppPage() {
         />
       </div>
 
-      {/* Banner Ad - Rotates through all active ads */}
-      {bannerAds.length > 0 && bannerAds[currentBannerIndex] && (
+      {/* Banner Ad - hidden during Vibe Check */}
+      {!vibeCheckActive && bannerAds.length > 0 && bannerAds[currentBannerIndex] && (
         <a
           href={bannerAds[currentBannerIndex].click_url}
           target="_blank"
@@ -548,29 +548,29 @@ export default function AppPage() {
         </a>
       )}
 
-      {/* Logged in as */}
-      {user && (
+      {/* Logged in as — hidden during Vibe Check */}
+      {!vibeCheckActive && user && (
         <div className="absolute top-32 left-4 px-4 py-2 bg-gradient-to-r from-secondary/95 to-primary/95 backdrop-blur-md text-neutral/80 text-xs rounded-full border border-accent/30 shadow-lg shadow-accent/10 z-10">
           <span className="text-accent mr-1">🚬</span> <span className="text-accent font-semibold">{user.username || user.email?.split('@')[0] || 'Guest'}</span>
         </div>
       )}
 
-      {/* Advertise Button */}
-      <Link
+      {/* Advertise Button — hidden during Vibe Check */}
+      {!vibeCheckActive && <Link
         href="/advertise"
         className="absolute top-44 left-4 px-4 py-2.5 bg-gradient-to-r from-accent/90 to-accent backdrop-blur-md text-white text-sm font-medium rounded-full shadow-lg shadow-accent/30 border border-accent/50 flex items-center gap-2 hover:from-accent hover:to-accent/80 hover:shadow-accent/40 transition-all z-10"
       >
         <span className="text-base">📢</span> Advertise
-      </Link>
+      </Link>}
 
-      {/* Feed Button */}
-      <Link
+      {/* Feed Button — hidden during Vibe Check */}
+      {!vibeCheckActive && <Link
         href="/app"
         className="absolute bottom-6 left-6 px-5 py-3 bg-secondary/95 backdrop-blur-md text-neutral rounded-full shadow-lg border border-neutral/20 flex items-center gap-2 hover:bg-secondary transition z-10"
       >
         <span className="text-lg">🌿</span>
         <span className="text-sm font-medium">Feed</span>
-      </Link>
+      </Link>}
 
       {/* Vibe Check Overlay — auto-active */}
       {vibeCheckActive && (
@@ -591,16 +591,16 @@ export default function AppPage() {
         </button>
       )}
 
-      {/* FAB - Create Spot */}
-      <Link
+      {/* FAB - Create Spot — hidden during Vibe Check */}
+      {!vibeCheckActive && <Link
         href="/app/spot/new"
         className="absolute bottom-6 right-6 w-14 h-14 bg-accent text-white rounded-full shadow-lg shadow-accent/30 flex items-center justify-center text-2xl hover:bg-accent/90 transition z-10"
       >
         +
-      </Link>
+      </Link>}
 
-      {/* Bottom Sheet */}
-      {selectedSpot && (
+      {/* Bottom Sheet — hidden during Vibe Check */}
+      {!vibeCheckActive && selectedSpot && (
         <div
           className={`absolute bottom-0 left-0 right-0 bg-secondary/95 backdrop-blur-sm rounded-t-3xl shadow-2xl transition-transform duration-300 z-20 ${
             showSheet ? 'translate-y-0' : 'translate-y-full'
@@ -694,16 +694,16 @@ export default function AppPage() {
         </div>
       )}
 
-      {/* Overlay when sheet is open */}
-      {showSheet && (
+      {/* Overlay when sheet is open — hidden during Vibe Check */}
+      {!vibeCheckActive && showSheet && (
         <div
           className="absolute inset-0 bg-black/30 z-10"
           onClick={closeSheet}
         />
       )}
 
-      {/* Fire Sale Popup */}
-      {fireSale && (
+      {/* Fire Sale Popup — hidden during Vibe Check */}
+      {!vibeCheckActive && fireSale && (
         <FireSalePopup
           fireSale={fireSale}
           latitude={mapCenter?.lat}
