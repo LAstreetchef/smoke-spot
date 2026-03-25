@@ -92,7 +92,7 @@ export default function AppPage() {
   const [showSpotResults, setShowSpotResults] = useState(false)
   const [placeResults, setPlaceResults] = useState<google.maps.places.AutocompletePrediction[]>([])
   const [showSearchResults, setShowSearchResults] = useState(false)
-  const [vibeCheckActive, setVibeCheckActive] = useState(false)
+  const [vibeCheckActive, setVibeCheckActive] = useState(true)
   const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null)
   const searchInputRef = useRef<HTMLInputElement>(null)
   const autocompleteServiceRef = useRef<google.maps.places.AutocompleteService | null>(null)
@@ -572,22 +572,23 @@ export default function AppPage() {
         <span className="text-sm font-medium">Feed</span>
       </Link>
 
-      {/* VIBE CHECK Toggle */}
-      <button
-        onClick={() => setVibeCheckActive(true)}
-        className="absolute bottom-6 left-1/2 -translate-x-1/2 px-5 py-3 bg-gradient-to-r from-[#ff3366] to-[#7b61ff] backdrop-blur-md text-white rounded-full shadow-lg shadow-[#ff3366]/30 border border-[#ff3366]/50 flex items-center gap-2 hover:shadow-[#ff3366]/50 transition-all z-10 animate-pulse"
-      >
-        <span className="text-lg">⚡</span>
-        <span className="text-sm font-bold tracking-wider">VIBE CHECK</span>
-      </button>
-
-      {/* Vibe Check Overlay */}
+      {/* Vibe Check Overlay — auto-active */}
       {vibeCheckActive && (
         <VibeCheckOverlay
           spots={spots.map(s => ({ id: s.id, name: s.name, latitude: s.latitude, longitude: s.longitude, spot_type: s.spot_type }))}
           onClose={() => setVibeCheckActive(false)}
           userLocation={mapCenter}
         />
+      )}
+
+      {/* Re-enable Vibe Check if closed */}
+      {!vibeCheckActive && (
+        <button
+          onClick={() => setVibeCheckActive(true)}
+          className="absolute bottom-20 left-1/2 -translate-x-1/2 px-4 py-2 bg-[#ff3366]/90 backdrop-blur-md text-white rounded-full text-xs font-bold shadow-lg z-10"
+        >
+          ⚡ VIBE CHECK
+        </button>
       )}
 
       {/* FAB - Create Spot */}

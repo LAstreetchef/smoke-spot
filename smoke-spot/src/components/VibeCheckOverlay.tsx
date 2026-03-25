@@ -184,6 +184,152 @@ function playDistort(text: string, mood: number) {
   })
 }
 
+// ═══ RADAR CANVAS — renders sweep line + dots over the map ═══
+function RadarCanvas({ players, me, nearestSpot, waveActive, onPlayerClick }: {
+  players: Player[]; me: Player; nearestSpot: Spot | null; waveActive: boolean
+  onPlayerClick: (p: Player) => void
+}) {
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const sweepRef = useRef(0)
+  const afRef = useRef<number>(0)
+
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+
+    function resize() {
+      const dpr = window.devicePixelRatio || 1
+      canvas!.width = window.innerWidth * dpr
+      canvas!.height = window.innerHeight * dpr
+      ctx!.scale(dpr, dpr)
+    }
+    resize()
+    window.addEventListener('resize', resize)
+
+    function frame() {
+      const W = window.innerWidth, H = window.innerHeight
+      ctx!.clearRect(0, 0, W, H)
+
+      // Center on the map center (roughly middle of screen)
+      const cx = W / 2, cy = H / 2
+      const maxR = Math.min(W, H) * 0.38
+
+      // Grid rings — very subtle
+      ;[0.25, 0.5, 0.75, 1].forEach(r => {
+        ctx!.beginPath(); ctx!.arc(cx, cy, maxR * r, 0, Math.PI * 2)
+        ctx!.strokeStyle = 'rgba(255,51,102,0.04)'; ctx!.lineWidth = 1; ctx!.stroke()
+      })
+
+      // Sweep line
+      sweepRef.current += 0.012
+      const sweep = sweepRef.current
+      ctx!.beginPath(); ctx!.moveTo(cx, cy)
+      ctx!.lineTo(cx + Math.cos(sweep) * maxR, cy + Math.sin(sweep) * maxR)
+      ctx!.strokeStyle = 'rgba(255,51,102,0.25)'; ctx!.lineWidth = 1.5; ctx!.stroke()
+
+      // Sweep glow trail
+      ctx!.save()
+      ctx!.beginPath(); ctx!.moveTo(cx, cy)
+      ctx!.arc(cx, cy, maxR, sweep - 0.5, sweep); ctx!.closePath()
+      const sg = ctx!.createRadialGradient(cx, cy, 0, cx, cy, maxR)
+      sg.addColorStop(0, 'rgba(255,51,102,0.06)')
+      sg.addColorStop(0.7, 'rgba(255,51,102,0.02)')
+      sg.addColorStop(1, 'rgba(255,51,102,0)')
+      ctx!.fillStyle = sg; ctx!.fill(); ctx!.restore()
+
+      // Wave pulse
+      if (waveActive) {
+        const wr = maxR * (0.9 + Math.sin(Date.now() / 300) * 0.08)
+        ctx!.beginPath(); ctx!.arc(cx, cy, wr, 0, Math.PI * 2)
+        ctx!.strokeStyle = `rgba(255,51,102,${0.08 + Math.sin(Date.now() / 500) * 0.04})`
+        ctx!.lineWidth = 2; ctx!.stroke()
+      }
+
+      // Player dots — distributed around center
+      players.forEach((p, idx) => {
+        const a = (idx / Math.max(1, players.length)) * Math.PI * 2 + Math.sin(Date.now() / 10000) * 0.05
+        const nd = 0.3 + (idx % 3) * 0.2 + Math.sin(idx * 2.399) * 0.1
+        const px = cx + Math.cos(a) * nd * maxR
+        const py = cy + Math.sin(a) * nd * maxR
+        const v = VT[p.vibe_key] || { c: '#555' }
+        const dr = p.is_throne ? 9 : Math.max(4, Math.min(7, 3 + p.clout / 60))
+        const al = Math.max(0.2, Math.min(1, p.clout / 60 + 0.25))
+
+        // Glow
+        if (p.clout >= 20) {
+          const gr = ctx!.createRadialGradient(px, py, 0, px, py, dr + 6)
+          gr.addColorStop(0, v.c + '18'); gr.addColorStop(1, v.c + '00')
+          ctx!.beginPath(); ctx!.arc(px, py, dr + 6, 0, Math.PI * 2); ctx!.fillStyle = gr; ctx!.fill()
+        }
+
+        // Dot
+        ctx!.beginPath(); ctx!.arc(px, py, dr, 0, Math.PI * 2)
+        ctx!.globalAlpha = al; ctx!.fillStyle = v.c; ctx!.fill(); ctx!.globalAlpha = 1
+
+        // Sweep flash
+        const da = Math.atan2(py - cy, px - cx)
+        const sn = ((sweep % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2)
+        const dn = ((da % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2)
+        const diff = Math.abs(sn - dn)
+        if (diff < 0.25 || diff > Math.PI * 2 - 0.25) {
+          ctx!.beginPath(); ctx!.arc(px, py, dr + 3, 0, Math.PI * 2)
+          ctx!.strokeStyle = v.c + '60'; ctx!.lineWidth = 1.5; ctx!.stroke()
+        }
+
+        // Crown
+        if (p.is_throne) { ctx!.font = '10px serif'; ctx!.fillText('👑', px - 5, py - dr - 4) }
+        // Name
+        ctx!.font = '600 7px Outfit'; ctx!.fillStyle = 'rgba(255,255,255,0.35)'
+        ctx!.textAlign = 'center'; ctx!.fillText(p.name, px, py + dr + 10)
+
+        // Store position for click detection
+        ;(p as any)._x = px; (p as any)._y = py; (p as any)._r = dr
+      })
+
+      // Me — center dot
+      const mv = VT[me.vibe_key] || { c: '#fff' }
+      const mg = ctx!.createRadialGradient(cx, cy, 0, cx, cy, 14)
+      mg.addColorStop(0, mv.c + '20'); mg.addColorStop(1, mv.c + '00')
+      ctx!.beginPath(); ctx!.arc(cx, cy, 14, 0, Math.PI * 2); ctx!.fillStyle = mg; ctx!.fill()
+      ctx!.beginPath(); ctx!.arc(cx, cy, 6, 0, Math.PI * 2); ctx!.fillStyle = mv.c; ctx!.fill()
+      ctx!.font = '700 8px monospace'; ctx!.fillStyle = 'rgba(255,255,255,0.6)'
+      ctx!.textAlign = 'center'; ctx!.fillText('YOU', cx, cy + 18)
+
+      afRef.current = requestAnimationFrame(frame)
+    }
+    frame()
+
+    return () => {
+      cancelAnimationFrame(afRef.current)
+      window.removeEventListener('resize', resize)
+    }
+  }, [players, me, nearestSpot, waveActive])
+
+  // Click handler
+  const handleClick = (e: React.MouseEvent) => {
+    const rect = canvasRef.current?.getBoundingClientRect()
+    if (!rect) return
+    const mx = e.clientX - rect.left, my = e.clientY - rect.top
+    for (const p of players) {
+      const px = (p as any)._x, py = (p as any)._y, pr = (p as any)._r
+      if (px !== undefined && Math.hypot(mx - px, my - py) < Math.max(18, (pr || 6) + 10)) {
+        onPlayerClick(p); return
+      }
+    }
+  }
+
+  return (
+    <canvas
+      ref={canvasRef}
+      onClick={handleClick}
+      className="absolute inset-0 z-10 pointer-events-auto"
+      style={{ width: '100%', height: '100%' }}
+    />
+  )
+}
+
 // ═══ COMPONENT ═══
 export default function VibeCheckOverlay({ spots, onClose, userLocation }: VibeCheckOverlayProps) {
   const supabase = createClient()
@@ -386,14 +532,14 @@ export default function VibeCheckOverlay({ spots, onClose, userLocation }: VibeC
   // ═══ GAME ACTIONS ═══
   function addFeed(from: Partial<Player>, to: Partial<Player>, msg: string, mood: number, resp: string | null) {
     setFeedItems(prev => [{
-      t: 'ping' as const, from: { name: from.name || '?', vibe_key: from.vibe_key || '', clout: from.clout || 0 },
+      t: 'ping', from: { name: from.name || '?', vibe_key: from.vibe_key || '', clout: from.clout || 0 },
       to: { name: to.name || '?', vibe_key: to.vibe_key || '' },
       msg, mood, resp, time: Date.now()
-    } as FeedItem, ...prev].slice(0, 40))
+    }, ...prev].slice(0, 40))
   }
 
   function addEvent(text: string, cls: string) {
-    setFeedItems(prev => [{ t: 'event' as const, text, cls, time: Date.now() } as FeedItem, ...prev].slice(0, 40))
+    setFeedItems(prev => [{ t: 'event', text, cls, time: Date.now() }, ...prev].slice(0, 40))
   }
 
   function handleRespond(action: string) {
@@ -494,72 +640,63 @@ export default function VibeCheckOverlay({ spots, onClose, userLocation }: VibeC
   const throne = [...players, me].sort((a, b) => b.clout - a.clout)[0]
 
   return (
-    <div className="fixed inset-0 z-50 pointer-events-none" style={{ fontFamily: "'Outfit', sans-serif" }}>
-      {/* TOP BAR */}
-      <div className="pointer-events-auto absolute top-0 left-0 right-0 flex items-center justify-between px-3 py-2 bg-[#0a0a0f]/85 backdrop-blur-md border-b border-white/5 z-20">
-        <div className="flex items-center gap-2">
-          <span className="font-mono text-xs font-bold bg-gradient-to-r from-[#ff3366] to-[#7b61ff] bg-clip-text text-transparent">VC</span>
-          <span className="font-mono text-[10px] px-2 py-0.5 bg-white/8 rounded" style={{ color: myRank.c }}>{myRank.em} {myRank.n}</span>
-          {nearestSpot && <span className="text-[10px] text-white/30 font-mono truncate max-w-[120px]">@ {nearestSpot.name}</span>}
-        </div>
-        <div className="flex items-center gap-2">
-          {waveActive && <span className="font-mono text-[10px] px-2 py-0.5 bg-gradient-to-r from-[#ff3366] to-[#7b61ff] rounded text-white font-bold animate-pulse">⚡ WAVE</span>}
-          {throne?.id === me.id && <span className="text-sm">👑</span>}
-          <span className="font-mono text-xs font-bold text-[#ffd700]">{me.clout} CLOUT</span>
-          <button onClick={onClose} className="text-white/40 hover:text-white text-sm ml-1">✕</button>
-        </div>
+    <div className="fixed inset-0 z-30 pointer-events-none" style={{ fontFamily: "'Outfit', sans-serif" }}>
+
+      {/* RADAR CANVAS — covers map, renders sweep line + player dots */}
+      <RadarCanvas players={players} me={me} nearestSpot={nearestSpot} waveActive={waveActive} onPlayerClick={(p) => { setCompTarget(p); setShowComposer(true) }} />
+
+      {/* VC STATUS BAR — compact, top-left under existing UI */}
+      <div className="pointer-events-auto absolute top-[140px] left-3 flex items-center gap-1.5 px-2.5 py-1.5 bg-[#0a0a0f]/80 backdrop-blur-md rounded-full border border-white/10 z-20">
+        <span className="font-mono text-[10px] font-bold bg-gradient-to-r from-[#ff3366] to-[#7b61ff] bg-clip-text text-transparent">VC</span>
+        <span className="font-mono text-[9px] px-1.5 py-0.5 bg-white/8 rounded" style={{ color: myRank.c }}>{myRank.em} {myRank.n}</span>
+        {waveActive && <span className="font-mono text-[8px] px-1.5 py-0.5 bg-gradient-to-r from-[#ff3366] to-[#7b61ff] rounded text-white font-bold animate-pulse">⚡</span>}
+        {throne?.id === me.id && <span className="text-xs">👑</span>}
+        <span className="font-mono text-[10px] font-bold text-[#ffd700]">{me.clout}</span>
+        <button onClick={onClose} className="text-white/30 hover:text-white text-[10px] ml-0.5">✕</button>
       </div>
 
-      {/* LIVE CHAT — floating over the map */}
-      <div className="pointer-events-none absolute bottom-14 left-0 right-0 max-h-[40vh] overflow-y-auto px-2 pb-1 flex flex-col justify-end z-10"
-        style={{ maskImage: 'linear-gradient(to bottom, transparent 0%, black 15%, black 100%)', WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 15%, black 100%)' }}>
-        {feedItems.slice(0, 10).reverse().map((item, i) => {
+      {/* LIVE CHAT — top-right corner, compact */}
+      <div className="pointer-events-none absolute top-[100px] right-2 w-[220px] max-h-[35vh] overflow-y-auto flex flex-col justify-end z-10"
+        style={{ maskImage: 'linear-gradient(to bottom, transparent 0%, black 20%, black 100%)', WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 20%, black 100%)' }}>
+        {feedItems.slice(0, 6).reverse().map((item, i) => {
           if (item.t === 'event') return (
-            <div key={i} className={`pointer-events-auto px-3 py-1.5 mb-1 rounded-lg text-center font-mono text-[10px] bg-[#12121a]/75 backdrop-blur-sm ${
-              item.cls === 'throne-ev' ? 'text-[#ffd700] border border-[#ffd700]/20' :
-              item.cls === 'wave-ev' ? 'text-[#ff3366] border border-[#ff3366]/20' :
-              item.cls === 'rank-ev' ? 'text-[#7b61ff] border border-[#7b61ff]/20' : 'text-white/50'
+            <div key={i} className={`pointer-events-auto px-2 py-1 mb-0.5 rounded text-center font-mono text-[8px] bg-[#0a0a0f]/70 backdrop-blur-sm ${
+              item.cls === 'throne-ev' ? 'text-[#ffd700]' :
+              item.cls === 'wave-ev' ? 'text-[#ff3366]' :
+              item.cls === 'rank-ev' ? 'text-[#7b61ff]' : 'text-white/40'
             }`}>{item.text}</div>
           )
           const fv = VT[item.from?.vibe_key || ''] || {}
           const tv = VT[item.to?.vibe_key || ''] || {}
           const rc = item.resp || ''
           return (
-            <div key={i} className={`pointer-events-auto px-3 py-2 mb-1 rounded-lg bg-[#12121a]/80 backdrop-blur-sm border max-w-[85%] ${
-              rc === 'echo' ? 'border-[#00ffaa]/25 bg-[#00ffaa]/5' :
-              rc === 'distort' ? 'border-[#ff3366]/25 bg-[#ff3366]/5' :
-              rc === 'absorb' ? 'border-white/5 opacity-40' : 'border-white/5'
+            <div key={i} className={`pointer-events-auto px-2 py-1 mb-0.5 rounded bg-[#0a0a0f]/70 backdrop-blur-sm border ${
+              rc === 'echo' ? 'border-[#00ffaa]/20' :
+              rc === 'distort' ? 'border-[#ff3366]/20' :
+              rc === 'absorb' ? 'border-white/5 opacity-35' : 'border-white/5'
             }`} style={{ animation: 'fadeInUp 0.3s ease-out' }}>
-              <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
-                <span className="font-semibold text-[11px]" style={{ color: (fv as any).c || '#fff' }}>{item.from?.name}</span>
-                <span className="text-white/30 text-[9px]">→</span>
-                <span className="font-semibold text-[11px]" style={{ color: (tv as any).c || '#fff' }}>{item.to?.name}</span>
-                {rc === 'echo' && <span className="ml-auto font-mono text-[8px] px-1.5 py-0.5 rounded bg-[#00ffaa]/20 text-[#00ffaa]">ECHO ✦</span>}
-                {rc === 'distort' && <span className="ml-auto font-mono text-[8px] px-1.5 py-0.5 rounded bg-[#ff3366]/20 text-[#ff3366]">DISTORT ✗</span>}
-                {rc === 'absorb' && <span className="ml-auto font-mono text-[8px] px-1.5 py-0.5 rounded bg-white/10 text-white/40">ABSORBED</span>}
+              <div className="flex items-center gap-1 flex-wrap">
+                <span className="font-semibold text-[9px]" style={{ color: (fv as any).c || '#fff' }}>{item.from?.name}</span>
+                <span className="text-white/20 text-[7px]">→</span>
+                <span className="font-semibold text-[9px]" style={{ color: (tv as any).c || '#fff' }}>{item.to?.name}</span>
+                {rc === 'echo' && <span className="ml-auto font-mono text-[7px] px-1 rounded bg-[#00ffaa]/20 text-[#00ffaa]">ECHO</span>}
+                {rc === 'distort' && <span className="ml-auto font-mono text-[7px] px-1 rounded bg-[#ff3366]/20 text-[#ff3366]">DISTORT</span>}
               </div>
-              <div className="font-mono text-[11px] text-white/60">"{item.msg}" <span className="text-[9px]">{MOODS[item.mood || 0]?.em}</span></div>
+              <div className="font-mono text-[8px] text-white/50 truncate">"{item.msg}"</div>
             </div>
           )
         })}
       </div>
 
-      {/* BOTTOM NAV */}
-      <div className="pointer-events-auto absolute bottom-0 left-0 right-0 flex bg-[#12121a]/92 backdrop-blur-md border-t border-white/5 z-20">
-        <button onClick={() => { setShowNearby(false); setShowProfile(false) }}
-          className={`flex-1 py-2.5 flex flex-col items-center gap-0.5 text-[10px] font-semibold uppercase tracking-wider ${!showNearby && !showProfile ? 'text-[#ff3366]' : 'text-white/40'}`}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="12" r="3"/><path d="M6.7 6.7a8 8 0 0 1 11.3 0M4 4a13 13 0 0 1 16.9 0"/></svg>
-          Radar
-        </button>
+      {/* BOTTOM BUTTONS — Nearby + Profile, compact pills */}
+      <div className="pointer-events-auto absolute bottom-5 left-1/2 -translate-x-1/2 flex gap-2 z-20">
         <button onClick={() => { setShowNearby(!showNearby); setShowProfile(false) }}
-          className={`flex-1 py-2.5 flex flex-col items-center gap-0.5 text-[10px] font-semibold uppercase tracking-wider ${showNearby ? 'text-[#ff3366]' : 'text-white/40'}`}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
-          Nearby
+          className={`px-4 py-2 rounded-full text-[11px] font-semibold backdrop-blur-md border transition ${showNearby ? 'bg-[#ff3366]/20 border-[#ff3366]/40 text-[#ff3366]' : 'bg-[#0a0a0f]/80 border-white/10 text-white/60'}`}>
+          👥 Nearby
         </button>
         <button onClick={() => { setShowProfile(!showProfile); setShowNearby(false) }}
-          className={`flex-1 py-2.5 flex flex-col items-center gap-0.5 text-[10px] font-semibold uppercase tracking-wider ${showProfile ? 'text-[#ff3366]' : 'text-white/40'}`}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-          Profile
+          className={`px-4 py-2 rounded-full text-[11px] font-semibold backdrop-blur-md border transition ${showProfile ? 'bg-[#ff3366]/20 border-[#ff3366]/40 text-[#ff3366]' : 'bg-[#0a0a0f]/80 border-white/10 text-white/60'}`}>
+          👤 Profile
         </button>
       </div>
 
