@@ -389,31 +389,52 @@ export default function VibeCheckOverlay({ spots, onClose, userLocation }: Props
         <button onClick={onClose} className="text-white/30 hover:text-white text-[10px] ml-0.5">✕</button>
       </div>
 
-      {/* LIVE CHAT — top-right, compact */}
-      <div className="pointer-events-none absolute top-[52px] right-2 w-[200px] max-h-[30vh] overflow-hidden flex flex-col justify-end z-20"
-        style={{ maskImage: 'linear-gradient(to bottom, transparent 0%, black 25%, black 100%)', WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 25%, black 100%)' }}>
-        {feed.slice(0, 5).reverse().map((item, i) => {
+      {/* LIVE CHAT + INLINE RESONANCE — right side, dark panel */}
+      <div className="pointer-events-auto absolute top-[52px] right-0 w-[230px] max-h-[50vh] overflow-y-auto z-20 bg-black/80 backdrop-blur-md border-l border-white/5"
+        style={{ maskImage: 'linear-gradient(to bottom, transparent 0%, black 8%, black 100%)', WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 8%, black 100%)' }}>
+
+        {/* INCOMING PING — inline resonance */}
+        {showRes && resData && (
+          <div className="px-2.5 py-2 mb-0.5 bg-[#ff3366]/10 border-b border-[#ff3366]/20" style={{ animation: 'popIn 0.3s ease-out' }}>
+            <div className="flex items-center gap-1 text-[9px] mb-1">
+              <span className="text-white/40 font-mono">PING FROM</span>
+              <span className="font-bold" style={{ color: (VT[resData.from.vibe_key] || { c: '#fff' }).c }}>{resData.from.name}</span>
+              <span className="ml-auto font-mono text-[10px] font-bold" style={{ color: resTimer <= 10 ? '#ff3366' : '#00ffaa' }}>{resTimer}s</span>
+            </div>
+            <p className="font-mono text-[11px] text-white mb-1">"{resData.msg}" <span className="text-[9px] text-white/40">{MOODS[resData.mood]?.em}</span></p>
+            <div className="flex gap-1">
+              <button onClick={() => handleRespond('echo')} className="flex-1 py-1 bg-[#00ffaa] rounded text-[#0a0a0f] font-bold text-[9px] active:scale-95 transition">ECHO</button>
+              <button onClick={() => handleRespond('distort')} className="flex-1 py-1 bg-[#ff3366] rounded text-white font-bold text-[9px] active:scale-95 transition">DISTORT</button>
+              <button onClick={() => handleRespond('absorb')} className="flex-1 py-1 bg-white/10 rounded text-white/40 font-bold text-[9px] active:scale-95 transition">ABSORB</button>
+            </div>
+          </div>
+        )}
+
+        {/* FEED ITEMS */}
+        {feed.slice(0, 8).map((item, i) => {
           if (item.t === 'event') return (
-            <div key={i} className="px-2 py-0.5 mb-0.5 rounded font-mono text-[8px] bg-black/60 text-white/50 text-center">{item.text}</div>
+            <div key={i} className="px-2.5 py-1 border-b border-white/5 font-mono text-[8px] text-white/40 text-center">{item.text}</div>
           )
           const fv = VT[item.from?.vibe_key || ''] || { c: '#888' }
           const tv = VT[item.to?.vibe_key || ''] || { c: '#888' }
           const rc = item.resp || ''
           return (
-            <div key={i} className={`pointer-events-auto px-2 py-1 mb-0.5 rounded bg-black/60 border ${
-              rc === 'echo' ? 'border-[#00ffaa]/30' : rc === 'distort' ? 'border-[#ff3366]/30' : 'border-white/5'
-            } ${rc === 'absorb' ? 'opacity-30' : ''}`}>
-              <div className="flex items-center gap-1 text-[8px]">
-                <span style={{ color: fv.c }}>{item.from?.name}</span>
-                <span className="text-white/20">→</span>
-                <span style={{ color: tv.c }}>{item.to?.name}</span>
-                {rc === 'echo' && <span className="ml-auto text-[7px] text-[#00ffaa]">ECHO</span>}
-                {rc === 'distort' && <span className="ml-auto text-[7px] text-[#ff3366]">DISTORT</span>}
+            <div key={i} className={`px-2.5 py-1.5 border-b border-white/5 ${rc === 'absorb' ? 'opacity-30' : ''}`}>
+              <div className="flex items-center gap-1 text-[9px]">
+                <span className="font-semibold" style={{ color: fv.c }}>{item.from?.name}</span>
+                <span className="text-white/15">→</span>
+                <span className="font-semibold" style={{ color: tv.c }}>{item.to?.name}</span>
+                {rc === 'echo' && <span className="ml-auto text-[7px] text-[#00ffaa] font-mono font-bold">ECHO ✦</span>}
+                {rc === 'distort' && <span className="ml-auto text-[7px] text-[#ff3366] font-mono font-bold">DISTORT</span>}
               </div>
-              <div className="font-mono text-[7px] text-white/40 truncate">"{item.msg}"</div>
+              <div className="font-mono text-[8px] text-white/30 truncate">"{item.msg}"</div>
             </div>
           )
         })}
+
+        {feed.length === 0 && (
+          <div className="px-3 py-4 text-center text-[9px] text-white/20 font-mono">Waiting for pings...</div>
+        )}
       </div>
 
       {/* SPOT NAME — bottom center */}
@@ -449,25 +470,6 @@ export default function VibeCheckOverlay({ spots, onClose, userLocation }: Props
               className="w-full py-3 bg-gradient-to-r from-[#ff3366] to-[#7b61ff] rounded-xl text-white font-bold disabled:opacity-30 active:scale-[0.97] transition text-sm">
               THROW IT ⚡
             </button>
-          </div>
-        </div>
-      )}
-
-      {/* RESONANCE */}
-      {showRes && resData && (
-        <div className="pointer-events-auto fixed inset-0 z-50 bg-black/85 backdrop-blur-lg flex items-center justify-center p-5">
-          <div className="bg-[#12121a] border border-white/10 rounded-2xl p-5 w-full max-w-xs text-center" style={{ animation: 'popIn 0.3s ease-out' }}>
-            <p className="font-mono text-[9px] text-white/40 tracking-widest mb-2">
-              INCOMING PING FROM <span style={{ color: (VT[resData.from.vibe_key] || { c: '#fff' }).c }}>{resData.from.name}</span>
-            </p>
-            <p className="font-mono text-lg font-bold text-white mb-1">"{resData.msg}"</p>
-            <p className="text-xs text-white/40 mb-3">{MOODS[resData.mood]?.em} {MOODS[resData.mood]?.n}</p>
-            <p className="font-mono text-3xl font-bold mb-4" style={{ color: resTimer <= 10 ? '#ff3366' : '#00ffaa' }}>{resTimer}</p>
-            <div className="flex gap-2">
-              <button onClick={() => handleRespond('echo')} className="flex-1 py-2.5 bg-[#00ffaa] rounded-xl text-[#0a0a0f] font-bold text-sm active:scale-95">ECHO</button>
-              <button onClick={() => handleRespond('distort')} className="flex-1 py-2.5 bg-[#ff3366] rounded-xl text-white font-bold text-sm active:scale-95">DISTORT</button>
-              <button onClick={() => handleRespond('absorb')} className="flex-1 py-2.5 bg-white/10 rounded-xl text-white/50 font-bold text-sm active:scale-95">ABSORB</button>
-            </div>
           </div>
         </div>
       )}
