@@ -9,6 +9,7 @@ import { createClient } from '@/lib/supabase/client'
 const Map = dynamic(() => import('@/components/GoogleMap'), { ssr: false })
 const FireSalePopup = dynamic(() => import('@/components/FireSalePopup'), { ssr: false })
 const VibesHereNow = dynamic(() => import('@/components/VibesHereNow'), { ssr: false })
+const VibeCheckOverlay = dynamic(() => import('@/components/VibeCheckOverlay'), { ssr: false })
 
 // Debounce helper
 function debounce<T extends (...args: any[]) => any>(fn: T, delay: number): T {
@@ -91,6 +92,8 @@ export default function AppPage() {
   const [showSpotResults, setShowSpotResults] = useState(false)
   const [placeResults, setPlaceResults] = useState<google.maps.places.AutocompletePrediction[]>([])
   const [showSearchResults, setShowSearchResults] = useState(false)
+  const [vibeCheckActive, setVibeCheckActive] = useState(false)
+  const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null)
   const searchInputRef = useRef<HTMLInputElement>(null)
   const autocompleteServiceRef = useRef<google.maps.places.AutocompleteService | null>(null)
   const placesServiceRef = useRef<google.maps.places.PlacesService | null>(null)
@@ -568,6 +571,24 @@ export default function AppPage() {
         <span className="text-lg">🌿</span>
         <span className="text-sm font-medium">Feed</span>
       </Link>
+
+      {/* VIBE CHECK Toggle */}
+      <button
+        onClick={() => setVibeCheckActive(true)}
+        className="absolute bottom-6 left-1/2 -translate-x-1/2 px-5 py-3 bg-gradient-to-r from-[#ff3366] to-[#7b61ff] backdrop-blur-md text-white rounded-full shadow-lg shadow-[#ff3366]/30 border border-[#ff3366]/50 flex items-center gap-2 hover:shadow-[#ff3366]/50 transition-all z-10 animate-pulse"
+      >
+        <span className="text-lg">⚡</span>
+        <span className="text-sm font-bold tracking-wider">VIBE CHECK</span>
+      </button>
+
+      {/* Vibe Check Overlay */}
+      {vibeCheckActive && (
+        <VibeCheckOverlay
+          spots={spots.map(s => ({ id: s.id, name: s.name, latitude: s.latitude, longitude: s.longitude, spot_type: s.spot_type }))}
+          onClose={() => setVibeCheckActive(false)}
+          userLocation={mapCenter}
+        />
+      )}
 
       {/* FAB - Create Spot */}
       <Link
