@@ -386,14 +386,14 @@ export default function VibeCheckOverlay({ spots, onClose, userLocation }: VibeC
   // ═══ GAME ACTIONS ═══
   function addFeed(from: Partial<Player>, to: Partial<Player>, msg: string, mood: number, resp: string | null) {
     setFeedItems(prev => [{
-      t: 'ping', from: { name: from.name || '?', vibe_key: from.vibe_key || '', clout: from.clout || 0 },
+      t: 'ping' as const, from: { name: from.name || '?', vibe_key: from.vibe_key || '', clout: from.clout || 0 },
       to: { name: to.name || '?', vibe_key: to.vibe_key || '' },
       msg, mood, resp, time: Date.now()
-    }, ...prev].slice(0, 40))
+    } as FeedItem, ...prev].slice(0, 40))
   }
 
   function addEvent(text: string, cls: string) {
-    setFeedItems(prev => [{ t: 'event', text, cls, time: Date.now() }, ...prev].slice(0, 40))
+    setFeedItems(prev => [{ t: 'event' as const, text, cls, time: Date.now() } as FeedItem, ...prev].slice(0, 40))
   }
 
   function handleRespond(action: string) {
