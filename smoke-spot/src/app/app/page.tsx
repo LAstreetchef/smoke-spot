@@ -312,6 +312,13 @@ export default function SplitScreenPage() {
             👆 Tap map to add spot
           </div>
         </div>
+        {/* Vibe Check floating button on map */}
+        <a
+          href="/app/map"
+          className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 px-4 py-2 bg-gradient-to-r from-[#ff3366] to-[#7b61ff] text-white rounded-full text-xs font-bold shadow-lg shadow-[#ff3366]/30 border border-[#ff3366]/40 hover:opacity-90 transition flex items-center gap-1.5"
+        >
+          ⚡ Vibe Check
+        </a>
       </div>
 
       {/* Feed Panel - bottom portion on mobile, right 1/3 on desktop */}
@@ -332,13 +339,21 @@ export default function SplitScreenPage() {
         <div className="p-3 border-b border-zinc-800 shrink-0">
           <div className="flex items-center justify-between mb-2">
             <h2 className="text-base font-bold text-white">📍 Nearby</h2>
-            <button
-              onClick={() => setShowComposer(!showComposer)}
-              className="px-3 py-1 bg-emerald-600 text-white rounded-full text-xs font-medium hover:bg-emerald-500 transition"
-              title="Post to nearby area"
-            >
-              {showComposer ? '✕' : '+'}
-            </button>
+            <div className="flex items-center gap-2">
+              <a
+                href="/app/map"
+                className="px-3 py-1 bg-gradient-to-r from-[#ff3366] to-[#7b61ff] text-white rounded-full text-xs font-bold hover:opacity-90 transition"
+              >
+                ⚡ Vibe Check
+              </a>
+              <button
+                onClick={() => setShowComposer(!showComposer)}
+                className="px-3 py-1 bg-emerald-600 text-white rounded-full text-xs font-medium hover:bg-emerald-500 transition"
+                title="Post to nearby area"
+              >
+                {showComposer ? '✕' : '+'}
+              </button>
+            </div>
           </div>
           
           {/* Sort & Radius Controls */}
