@@ -578,6 +578,7 @@ export default function AppPage() {
           spots={spots.map(s => ({ id: s.id, name: s.name, latitude: s.latitude, longitude: s.longitude, spot_type: s.spot_type }))}
           onClose={() => setVibeCheckActive(false)}
           userLocation={mapCenter}
+          mapInstance={mapInstance}
         />
       )}
 

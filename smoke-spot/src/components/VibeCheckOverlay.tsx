@@ -9,7 +9,7 @@ interface Mood { n: string; em: string; scale: number[]; tempo: number; color: s
 interface Player { id: string; name: string; vibe_key: string; clout: number; spot_id: string; lat: number; lng: number; last_seen: string; _x?: number; _y?: number; _r?: number }
 interface FeedItem { t: 'ping' | 'event'; from?: { name: string; vibe_key: string }; to?: { name: string; vibe_key: string }; msg?: string; mood?: number; resp?: string | null; text?: string; time: number }
 interface Spot { id: string; name: string; latitude: number; longitude: number; spot_type: string }
-interface Props { spots: Spot[]; onClose: () => void; userLocation?: { lat: number; lng: number } | null }
+interface Props { spots: Spot[]; onClose: () => void; userLocation?: { lat: number; lng: number } | null; mapInstance?: google.maps.Map | null }
 
 // ═══ CONFIG ═══
 const VT: Record<string, VibeType> = {
@@ -93,7 +93,7 @@ function playDistort(text: string, mood: number) {
 }
 
 // ═══ MAIN COMPONENT ═══
-export default function VibeCheckOverlay({ spots, onClose, userLocation }: Props) {
+export default function VibeCheckOverlay({ spots, onClose, userLocation, mapInstance }: Props) {
   const supabase = createClient()
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const sweepRef = useRef(0)
@@ -251,7 +251,27 @@ export default function VibeCheckOverlay({ spots, onClose, userLocation }: Props
       ctx!.fillStyle = 'rgba(0,0,0,0.25)'
       ctx!.fillRect(0, 0, W, H)
 
-      const cx = W / 2, cy = H / 2, maxR = Math.min(W, H) * 0.4
+      // Center radar on nearest spot's position on the map
+      let cx = W / 2, cy = H / 2
+      if (mapInstance && nearestSpot) {
+        try {
+          const proj = mapInstance.getProjection()
+          const bounds = mapInstance.getBounds()
+          const ne = bounds?.getNorthEast()
+          const sw = bounds?.getSouthWest()
+          if (proj && ne && sw) {
+            const worldPoint = proj.fromLatLngToPoint(new google.maps.LatLng(nearestSpot.latitude, nearestSpot.longitude))
+            const neWorld = proj.fromLatLngToPoint(ne)
+            const swWorld = proj.fromLatLngToPoint(sw)
+            if (worldPoint && neWorld && swWorld) {
+              const scale = Math.pow(2, mapInstance.getZoom()!)
+              cx = (worldPoint.x - swWorld.x) * scale / (neWorld.x - swWorld.x) * W
+              cy = (worldPoint.y - neWorld.y) * scale / (swWorld.y - neWorld.y) * H
+            }
+          }
+        } catch { /* fallback to screen center */ }
+      }
+      const maxR = Math.min(W, H) * 0.4
 
       // Grid rings
       ;[0.25, 0.5, 0.75, 1].forEach(r => {
@@ -326,7 +346,7 @@ export default function VibeCheckOverlay({ spots, onClose, userLocation }: Props
     }
     frame()
     return () => { cancelAnimationFrame(afRef.current); window.removeEventListener('resize', resize) }
-  }, [me, players])
+  }, [me, players, mapInstance, nearestSpot])
 
   // ═══ ACTIONS ═══
   function addFeed(from: Partial<Player>, to: Partial<Player>, msg: string, mood: number, resp: string | null) {
